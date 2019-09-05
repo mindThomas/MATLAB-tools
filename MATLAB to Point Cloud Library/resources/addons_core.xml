@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<addonCore>
+
+  <label>MATLAB to Point Cloud Library</label>
+
+  <version>1.5.0.0</version>
+
+  <type>zip</type>
+
+  <identifier>e596adc5-4a80-11e4-9553-005056977bd0</identifier>
+
+  <createdBy name="Peter Corke"/>
+
+  <image>resources/screenshot.png</image>
+
+</addonCore>
