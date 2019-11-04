@@ -1,4 +1,4 @@
-function [idx, tri] = nearestneighbour(varargin)
+function [idx, dist] = nearestneighbour(varargin)
 %NEARESTNEIGHBOUR    find nearest neighbours
 %   IDX = NEARESTNEIGHBOUR(X) finds the nearest neighbour by Euclidean
 %   distance to each point (column) in X from X. X is a matrix with points
@@ -161,6 +161,7 @@ end
 % finding minimum distances
 if ~fDone
     idx = zeros(userParams.NumberOfNeighbours, size(P, 2));
+    dist = zeros(userParams.NumberOfNeighbours, size(P, 2));
 
     % Loop through the set of points P, finding the neighbours
     Y = zeros(size(X));
@@ -185,6 +186,7 @@ if ~fDone
 
         % Remove any bad ones
         idx(1:length(iSorted), iPoint) = iSorted';
+        dist(1:length(iSorted), iPoint) = sqrt(dSq(iSorted)');
     end
     %while ~isempty(idx) && isequal(idx(end, :), zeros(1, size(idx, 2)))
     %    idx(end, :) = [];
