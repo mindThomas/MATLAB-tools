@@ -17,6 +17,8 @@ sigma_q_v = 0.1;
 sigma_q_omega = 0.01; 
 Q = diag([sigma_q_v^2, sigma_q_omega^2]);
 
+model = DiscreteMotionModelHandler(f, x0, Q);
+
 %% Create measurement model
 [h, Hx, Hr] = PositionSensor(1,2); % specify where in the state vector that (x,y) is located
 
@@ -49,12 +51,12 @@ kf.x = x_init;
                
 time = 0;                    
 pos = kf.x(1:2)';
-x = x_init;
 for (i = 1:100)    
     time(end+1,1) = time(end,1) + ts;
-    %kf = kf.predict();
-    x = f(x,u0,q0);
-    pos(end+1,:) = x(1:2)';
+    model = model.step();
+    
+    %kf = kf.predict();    
+    pos(end+1,:) = model.x(1:2)';
 end
 
 figure(1);

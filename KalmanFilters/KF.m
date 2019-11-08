@@ -375,7 +375,7 @@ classdef KF
         function x = sampleProcessModel(obj, u)
             % Generate a realization from the process model based on x and Q
             % Generate noise realization, q[k] ~ N(0, Q)
-            q = obj.Q_sqrt * randn([size(obj.Bq), 2]);
+            q = obj.Q_sqrt * randn([size(obj.Bq, 2), 1]);
             % Apply the process model
             x = obj.x0 + ...
                 obj.f0 + ...
@@ -390,7 +390,7 @@ classdef KF
         function z = sampleMeasurementModel(obj)
             % Generate a realization from the measurement model based on x and R
             % Generate noise realization, r ~ N(0, R)
-            r = obj.R_sqrt * randn([size(obj.Hr), 2]);
+            r = obj.R_sqrt * randn([size(obj.Hr, 2), 1]);
             % Apply the linearized measurement model
             z = obj.h0 + obj.H * (obj.x - obj.x0) + obj.Hr * r;
         end 
@@ -399,7 +399,7 @@ classdef KF
            % Generate a realization of the state based on x and P
            P_sqrt = chol(obj.P, 'lower');
            % Generate estimation error noise realization
-           p = P_sqrt * randn([length(obj.P), 1]);
+           p = P_sqrt * randn([size(obj.P, 1), 1]);
            % Compose estimate and noise into realization
            x = obj.x + p;
         end
@@ -409,7 +409,7 @@ classdef KF
             % realization of the state and the measurement noise
             x = samplePosterior();
             % Generate noise realization, r ~ N(0, R)
-            r = obj.R_sqrt * randn([size(obj.Hr), 2]);
+            r = obj.R_sqrt * randn([size(obj.Hr, 2), 1]);
             % Apply the linearized measurement model
             z = obj.h0 + obj.H * (x - obj.x0) + obj.Hr * r;
         end        
