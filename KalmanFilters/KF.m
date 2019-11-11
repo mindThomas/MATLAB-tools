@@ -4,6 +4,8 @@ classdef KF
     end    
 	properties (SetAccess = private)        
         P
+        K
+        S
     end        
     properties (SetAccess = private)%(Access = private)
         A
@@ -59,7 +61,10 @@ classdef KF
             % We compute the continuous noise covariance affecting dx as if
             %   dx = f(x, u, q) = f(x, u, 0) + Bq*q
             %   where q ~ N(0, Qc)
-            Qcx = Bq * Qc * Bq';
+            %Qcx = Bq * Qc * Bq';
+            % NO. Instead of assuming the noise covariance to be ts*Qcx we
+            % assume the noise to be applied and held throughout the sample
+            % period, similar to an input. See below.           
             
             % Thereafter this is discretized into
             %   x[k+1] = x0 +
@@ -79,7 +84,14 @@ classdef KF
             %   exp(A*t) = I + A*t + A^2*t^2/2 + A^3*t^3/3! + A^4*t^4/4! + ...
             % such that
             %   int_0^ts exp(A*tau) dtau = I*ts + A*ts^2/2 + A^2*ts^3/3! + ...
-            [Ad, Bd] = discretize_analytic(Ac, Bc, ts);       
+            [Ad, Bd] = discretize_analytic(Ac, Bc, ts);      
+            
+            % We perform a similar discretization with regards to the noise input
+            [Ad_, Bqd] = discretize_analytic(Ac, Bq, ts);  
+            % The noise is then computed as
+            Q = Bqd * Qc * Bqd';
+            % This noise discretization can be improved to an analytically correct version as described in
+            % http://webee.technion.ac.il/people/shimkin/Estimation09/ch8_target.pdf
             
             % Measurement model is on the form:
             %   z = h(x, r)          [ defined with h = @(x,r) ... ]
@@ -98,7 +110,7 @@ classdef KF
             obj.A = Ad;
             obj.B = Bd;
             obj.H = dhdx;
-            obj.Q = ts * Qcx;
+            obj.Q = Q;
             obj.R = Rx;
             obj.x0 = x0;
             obj.u0 = u0;
@@ -106,7 +118,7 @@ classdef KF
             obj.f0 = ts * f(x0,u0,q0);        
             obj.Bq = Bq;
             obj.Hr = dhdr;
-            obj.Q_sqrt = chol(Q, 'lower');
+            obj.Q_sqrt = chol(Qc, 'lower');
             obj.R_sqrt = chol(R, 'lower');
             obj.x = x0;
             obj.P = P0;
@@ -140,8 +152,11 @@ classdef KF
             Bq = Fq(x0,u0,q0);
             % We compute the continuous noise covariance affecting dx as if
             %   dx = f(x, u, q) = f(x, u, 0) + Bq*q
-            %   where q ~ N(0, Qc)
-            Qcx = Bq * Qc * Bq';    
+            %   where q ~ N(0, Qc)            
+            %Qcx = Bq * Qc * Bq';
+            % NO. Instead of assuming the noise covariance to be ts*Qcx we
+            % assume the noise to be applied and held throughout the sample
+            % period, similar to an input. See below.              
             
             % Thereafter this is discretized into
             %   x[k+1] = x0 +
@@ -161,7 +176,17 @@ classdef KF
             %   exp(A*t) = I + A*t + A^2*t^2/2 + A^3*t^3/3! + A^4*t^4/4! + ...
             % such that
             %   int_0^ts exp(A*tau) dtau = I*ts + A*ts^2/2 + A^2*ts^3/3! + ...
-            [Ad, Bd] = discretize_analytic(Ac, Bc, ts);    
+            [Ad, Bd] = discretize_analytic(Ac, Bc, ts); 
+            
+            % We perform a similar discretization with regards to the noise input
+            [Ad_, Bqd] = discretize_analytic(Ac, Bq, ts);  
+            % The noise is then computed as
+            Q = Bqd * Qc * Bqd';
+            % This noise discretization can be improved to an analytically correct version as described in
+            % http://webee.technion.ac.il/people/shimkin/Estimation09/ch8_target.pdf
+            
+            % This noise discretization can be improved to an analytically correct version as described in
+            % http://webee.technion.ac.il/people/shimkin/Estimation09/ch8_target.pdf
             
             % Measurement model is on the form:
             %   z = h(x, r)          [ defined with h = @(x,r) ... ]
@@ -179,7 +204,7 @@ classdef KF
             obj.A = Ad;
             obj.B = Bd;
             obj.H = Hx(x0,r0);
-            obj.Q = ts * Qcx;
+            obj.Q = Q;
             obj.R = Rx;
             obj.x0 = x0;
             obj.u0 = u0;
@@ -187,7 +212,7 @@ classdef KF
             obj.f0 = ts * f(x0,u0,q0);   
             obj.Bq = Bq;
             obj.Hr = Hr(x0,r0);
-            obj.Q_sqrt = chol(Q, 'lower');
+            obj.Q_sqrt = chol(Qc, 'lower');
             obj.R_sqrt = chol(R, 'lower');
             obj.x = x0;
             obj.P = P0;
@@ -277,8 +302,7 @@ classdef KF
             
             % Prediction model is on the form:
             %   x[k+1] = f(x[k], u[k], q[k])
-            % Where q[k] ~ N(0, Q)            
-            
+            %   where q[k] ~ N(0, Q)                        
             % Which is linearized into
             %   x[k+1] = f(x0, u0, 0) + Ad*(x-x0) + Bd*(u-u0) + Bq*q
             Ad = Fx(x0, u0, q0);
@@ -345,7 +369,12 @@ classdef KF
         end
 
                         
-        function obj = predict(obj, u) 
+        function obj = predict(obj, varargin) 
+            if (nargin == 2)
+                u = varargin{1};
+            else
+                u = [];
+            end  
             % Compute prior estimate
             obj.x = obj.x0 + ...
                     obj.f0 + ...
@@ -363,13 +392,14 @@ classdef KF
             % Compute innovation
             innov = z - z_hat;
             % Compute innovation variance
-            S = obj.H * obj.P * obj.H' + obj.R;
+            obj.S = obj.H * obj.P * obj.H' + obj.R;
             % Compute Kalman gain
-            K = obj.P * obj.H' * inv(S);
+            obj.K = obj.P * obj.H' / obj.S;
             % Compute posterior estimate
-            obj.x = obj.x + K * innov;
+            obj.x = obj.x + obj.K * innov;
             % Compute posterior estimation error variance
-            obj.P = obj.P - K * S * K';
+            %obj.P = obj.P - obj.K * obj.S * obj.K';
+            obj.P = obj.P - obj.K * obj.H * obj.P;
         end
     
         function x = sampleProcessModel(obj, u)

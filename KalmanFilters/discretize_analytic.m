@@ -20,5 +20,9 @@ function [Ad, Bd] = discretize_analytic(Ac, Bc, ts)
         Bd = Bd + A_mul * ts_mul / i_factorial;
         A_mul = A_mul * Ac;
     end
-    Bd = Bd * Bc;
+    if (~isempty(Bc))
+        Bd = Bd * Bc;
+    else
+        Bd = [];
+    end
 end

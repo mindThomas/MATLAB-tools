@@ -28,8 +28,8 @@ function [f, Fx, Fu, Fq] = CoordinatedTurnModel_Discrete(ts)
     % u is the previous inputs, u[k-1]
     % q is the discrete zero-order hold noise vector, q[k-1]
     f = @(x, u, q) x + [ ...
-         	2*x(3)*rec(x(5)) * sin(x(5)*ts/2) * cos(x(4) + x(5)*ts/2)
-            2*x(3)*rec(x(5)) * sin(x(5)*ts/2) * sin(x(4) + x(5)*ts/2)
+         	2*x(3)*rec(x(5)) * sin(x(5)*ts/2) * cos(x(4) + x(5)*ts/2) + ts*x(3)*cos(x(4))*(abs(x(5))<=eps)
+            2*x(3)*rec(x(5)) * sin(x(5)*ts/2) * sin(x(4) + x(5)*ts/2) + ts*x(3)*sin(x(4))*(abs(x(5))<=eps)
             q(1)
             ts*x(5)
             q(2)
@@ -57,8 +57,8 @@ function [f, Fx, Fu, Fq] = CoordinatedTurnModel_Discrete(ts)
     
     % Jacobians of motion model
     Fx = @(x, u, q) eye(5) + [ ...
-        0, 0, 2*rec(x(5))*sin(x(5)*ts/2)*cos(x(4)+x(5)*ts/2),   -2*x(3)*rec(x(5))*sin(x(5)*ts/2)*sin(x(4)+x(5)*ts/2),         x(3)*rec(x(5))^2 * (x(5)*ts*cos(x(5)*ts/2)*cos(x(5)*ts/2 + x(4)) - x(5)*ts*sin(x(5)*ts/2)*sin(x(5)*ts/2+x(4)) - 2*sin(x(5)*ts/2)*cos(x(5)*ts/2 + x(4)) )
-        0, 0, 2*rec(x(5))*sin(x(5)*ts/2)*sin(x(4)+x(5)*ts/2),    2*x(3)*rec(x(5)) * sin(x(5)*ts/2) * cos(x(4) + x(5)*ts/2),   x(3)*rec(x(5))^2 * (x(5)*ts*sin(x(5)*ts/2)*cos(x(5)*ts/2 + x(4)) + x(5)*ts*cos(x(5)*ts/2)*sin(x(5)*ts/2+x(4)) - 2*sin(x(5)*ts/2)*sin(x(5)*ts/2 + x(4)) )
+        0, 0, 2*rec(x(5))*sin(x(5)*ts/2)*cos(x(4)+x(5)*ts/2) + ts*cos(x(4))*(abs(x(5))<=eps),   -2*x(3)*rec(x(5))*sin(x(5)*ts/2)*sin(x(4)+x(5)*ts/2) - ts*x(3)*sin(x(4))*(abs(x(5))<=eps),         x(3)*rec(x(5))^2 * (x(5)*ts*cos(x(5)*ts/2)*cos(x(5)*ts/2 + x(4)) - x(5)*ts*sin(x(5)*ts/2)*sin(x(5)*ts/2+x(4)) - 2*sin(x(5)*ts/2)*cos(x(5)*ts/2 + x(4)) )
+        0, 0, 2*rec(x(5))*sin(x(5)*ts/2)*sin(x(4)+x(5)*ts/2) + ts*sin(x(4))*(abs(x(5))<=eps),    2*x(3)*rec(x(5)) * sin(x(5)*ts/2) * cos(x(4) + x(5)*ts/2) + ts*x(3)*cos(x(4))*(abs(x(5))<=eps),   x(3)*rec(x(5))^2 * (x(5)*ts*sin(x(5)*ts/2)*cos(x(5)*ts/2 + x(4)) + x(5)*ts*cos(x(5)*ts/2)*sin(x(5)*ts/2+x(4)) - 2*sin(x(5)*ts/2)*sin(x(5)*ts/2 + x(4)) )
         0, 0, 0, 0, 0
         0, 0, 0, 0, ts
         0, 0, 0, 0, 0        

@@ -1,5 +1,5 @@
-classdef DiscreteMotionModelHandler
-    properties %(SetAccess = private)
+classdef ContinuousMotionModelHandler
+    properties (SetAccess = private)
         x
     end
 	properties (Access = private)
@@ -8,19 +8,24 @@ classdef DiscreteMotionModelHandler
         Q_sqrt
     end
     methods
-        function obj = DiscreteMotionModelHandler(f, x0, Q)                        
+        function obj = ContinuousMotionModelHandler(f, x0, Q)                        
             obj.x = x0;
             obj.f = f;
             obj.Q = Q;
             obj.Q_sqrt = chol(Q, 'lower');
         end
         
-        function obj = step(obj, vargin)            
+        function obj = step(obj, T, vargin)            
             if (nargin == 2)
                 u = vargin{1};
             else
                 u = [];
             end
+            % For smaller continuous systems, a step from t=t0 to t=t0+T,
+            % can be made with Euler discretization of small steps
+            steps = 10000;
+            ts = T / steps; % do 10.000 steps
+            for (i = 1:ste
             % Generate a realization from the process model based on x and Q
             % Generate noise realization, q[k] ~ N(0, Q)
             q = obj.Q_sqrt * randn([size(obj.Q, 1), 1]);
@@ -28,7 +33,7 @@ classdef DiscreteMotionModelHandler
             obj.x = obj.f(obj.x, u, q); 
         end
         
-        function obj = stepDeterministic(obj, vargin)            
+        function obj = stepDeterministic(obj, ts, vargin)            
             if (nargin == 2)
                 u = vargin{1};
             else
