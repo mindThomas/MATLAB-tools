@@ -22,7 +22,8 @@ function [f, Fx, Fu, Fq] = CoordinatedTurnModel_Discrete(ts)
     %   omega[k] = omega[k-1] + q_omega[k-1]    
     
     % Smart reciprocal
-    rec = @(x) prod(1/x*(abs(x)>eps), 'omitnan')*(abs(x)>eps);
+    %rec = @(x) prod(1/x*(abs(x)>eps), 'omitnan')*(abs(x)>eps);
+    rec = @(x) 1/x;
     
     % x is the previous state, x[k-1]
     % u is the previous inputs, u[k-1]

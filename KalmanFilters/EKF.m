@@ -295,9 +295,9 @@ classdef EKF
             % OBS: This can be done in 3 ways:
             %   1. Proper integration from t=t0 to t=t0+ts (e.g. with ODE solver)
             %   2. Euler method as listed above            
-            % Euler method
+            % Forward Euler method
             %   x[k+1] = x[k] + ts*f(x[k], u[k], 0)
-            obj.x = obj.x + obj.f(obj.x, u, q); % with q=0
+            obj.x = obj.x + ts*obj.f(obj.x, u, q); % with q=0
 
             % Compute prior estimation error variance
             obj.P = Ad * obj.P * Ad' + Qd;             

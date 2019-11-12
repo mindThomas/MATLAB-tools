@@ -4,17 +4,17 @@ addpath(fullfile(scriptDir, '../MotionModels'));
 addpath(fullfile(scriptDir, '../MeasurementModels'));
 
 %% Create motion model
-ts = 0.05;
+ts = 0.01;
 [f, Fx, Fu, Fq] = CoordinatedTurnModel_Discrete(ts);
 
 % x = [ x, y, v, phi, omega ]
-x0 = [ 0.2, 0, 0.1, deg2rad(25), deg2rad(25) ]';
+x0 = [ 0.2, 0, 0.5, deg2rad(25), deg2rad(45) ]';
 u0 = zeros(size(Fu(zeros(99,1),zeros(99,1),zeros(99,1)),2),1);
 q0 = zeros(size(Fq(zeros(99,1),zeros(99,1),zeros(99,1)),2),1);
 
 % Define process covariance
-sigma_q_v = 0.0001;
-sigma_q_omega = 0.0000001; 
+sigma_q_v = 0.00001;
+sigma_q_omega = 0.000001; 
 Q = diag([sigma_q_v^2, sigma_q_omega^2]);
 
 Qsim = Q;
@@ -38,14 +38,14 @@ kf = EKF;
 
 % Define initial process covariance
 % x = [ x, y, v, phi, omega ]
-sigma_xy = 1;
-sigma_v = 0.1;
-sigma_phi = 0.1;
-sigma_omega = 0.1;
+sigma_xy = 10;
+sigma_v = 1;
+sigma_phi = 0.1*pi;
+sigma_omega = 1;
 P0 = diag([sigma_xy^2, sigma_xy^2, sigma_v^2, sigma_phi^2, sigma_omega^2]);
 
-x_init = x0;
-x0 = zeros(size(x0));
+x0 = [ x0(1), x0(2), 0.1, deg2rad(45), deg2rad(10) ]';
+%x0 = zeros(size(x0));
 kf = kf.init_discrete_jacobians(...
                                 f, Fx, Fu, Fq, Q, ...  % process model
                                 h, Hx, Hr, R, ...  % measurement model
@@ -53,23 +53,24 @@ kf = kf.init_discrete_jacobians(...
      
 % OBS! Something seems to be wrong with the CoordinatedTurnModel Jacobian                            
                             
-kf = kf.init_discrete(...
+kf2 = kf.init_discrete(...
                                 f, Q, ...  % process model
                                 h, R, ...  % measurement model
                                 x0, P0);                              
                             
 time = 0;                    
-true = x_init';
+true = x0';
 pred = kf.x';
 est = kf.x';
-measurements = x_init(1:2)';
+measurements = x0(1:2)';
 variance = [kf.P(1,1), kf.P(2,2), kf.P(3,3), kf.P(4,4), kf.P(5,5)];
-for (i = 1:2000)    
+for (i = 1:300)    
     time(end+1,1) = time(end,1) + ts;
     
     % Propagate model and store true position
     model = model.stepDeterministic();        
     true(end+1,:) = model.x';
+    true(end,4) = mod(true(end,4), 2*pi);
     
     % Generate measurement
     z = meas.get(model.x);
@@ -83,6 +84,8 @@ for (i = 1:2000)
     end
     est(end+1,:) = kf.x';
     variance(end+1,:) = [kf.P(1,1), kf.P(2,2), kf.P(3,3), kf.P(4,4), kf.P(5,5)];
+    
+    kf.x(4) = mod(kf.x(4), 2*pi);
 end
 
 %%
@@ -123,17 +126,17 @@ title('omega'); legend('True', 'Prediction', 'Corrected');
 figure(3);
 clf;
 subplot(5,1,1);
-plot(time, true(:,1), time, est(:,1), '*', time, est(:,1)+sqrt(variance(:,1)), time, est(:,1)-sqrt(variance(:,1)));
+plot(time, true(:,1), time, est(:,1), time, est(:,1)+sqrt(variance(:,1)), '--', time, est(:,1)-sqrt(variance(:,1)), '--');
 title('x'); legend('True', 'Estimate', '1 sigma', '-1 sigma');
 subplot(5,1,2);
-plot(time, true(:,2), time, est(:,2), '*', time, est(:,2)+sqrt(variance(:,2)), time, est(:,2)-sqrt(variance(:,2)));
+plot(time, true(:,2), time, est(:,2), time, est(:,2)+sqrt(variance(:,2)), '--', time, est(:,2)-sqrt(variance(:,2)), '--');
 title('y'); legend('True', 'Estimate', '1 sigma', '-1 sigma');
 subplot(5,1,3);
-plot(time, true(:,3), time, time, est(:,3));
-title('v'); legend('True', 'Prediction', 'Corrected');
+plot(time, true(:,3), time, est(:,3), time, est(:,3)+sqrt(variance(:,3)), '--', time, est(:,3)-sqrt(variance(:,3)), '--');
+title('v'); legend('True', 'Estimate', '1 sigma', '-1 sigma');
 subplot(5,1,4);
-plot(time, true(:,4), time, time, est(:,4));
-title('phi'); legend('True', 'Prediction', 'Corrected');
+plot(time, true(:,4), time, est(:,4), time, est(:,4)+sqrt(variance(:,4)), '--', time, est(:,4)-sqrt(variance(:,4)), '--');
+title('phi'); legend('True', 'Estimate', '1 sigma', '-1 sigma');
 subplot(5,1,5);
-plot(time, true(:,5), time, est(:,5));
-title('omega'); legend('True', 'Prediction', 'Corrected');
+plot(time, true(:,5), time, est(:,5), time, est(:,5)+sqrt(variance(:,5)), '--', time, est(:,5)-sqrt(variance(:,5)), '--');
+title('omega'); legend('True', 'Estimate', '1 sigma', '-1 sigma');
