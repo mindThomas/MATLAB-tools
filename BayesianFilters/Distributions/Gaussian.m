@@ -85,7 +85,7 @@ classdef Gaussian
             end
             
             [V, D] = eig(obj.Cov);
-            E = diag(D);
+            E = sqrt(diag(D)); % the eigenvalues == sigma^2
             
             R = V;
             l = E;
@@ -109,10 +109,10 @@ classdef Gaussian
                 [R, l] = obj.getCovarianceRotation();
                 
                 four_sigma_points = [
-                    obj.Mu + 4 * R(:,1) * sqrt(l(1)), ...
-                    obj.Mu - 4 * R(:,1) * sqrt(l(1)), ...
-                    obj.Mu + 4 * R(:,2) * sqrt(l(2)), ...
-                    obj.Mu - 4 * R(:,2) * sqrt(l(2))
+                    obj.Mu + 4 * R(:,1) * l(1), ...
+                    obj.Mu - 4 * R(:,1) * l(1), ...
+                    obj.Mu + 4 * R(:,2) * l(2), ...
+                    obj.Mu - 4 * R(:,2) * l(2)
                 ];
                 
                 x_min = min(four_sigma_points(1,:));
@@ -147,7 +147,7 @@ classdef Gaussian
                 
                 for (s = 1:3)                
                     % generate data for "unrotated" ellipsoid
-                    [xc,yc,zc] = ellipsoid(0,0,0,s*sqrt(l(1)),s*sqrt(l(2)),s*sqrt(l(3)));
+                    [xc,yc,zc] = ellipsoid(0,0,0,s*l(1),s*l(2),s*l(3));
                     % rotate data with rotation matrix R and center Mu
                     a = kron(R(:,1),xc); b = kron(R(:,2),yc); c = kron(R(:,3),zc);
                     data = a+b+c; n = size(data,2);
@@ -166,6 +166,26 @@ classdef Gaussian
                 axis equal;                
             end
         end
+        
+        function plotSigmaContour(obj, sigma, varargin)
+            if (obj.n ~= 2)
+                error('This function only works with bivariate distributions');
+            end
+            if (nargin == 3)
+                color = varargin{1};
+            else
+                color = 'r-';
+            end
+
+            % bivariate distribution            
+            [R, l] = obj.getCovarianceRotation();
+
+            % Generate ellipse
+            theta = 0 : 0.01 : (2*pi+0.01);
+            p = sigma * l(1) * R(:,1) * cos(theta) + sigma * l(2) * R(:,2) * sin(theta) + obj.Mu;
+            plot(p(1,:), p(2,:), color);
+                        
+        end    
     end    
     
     methods 

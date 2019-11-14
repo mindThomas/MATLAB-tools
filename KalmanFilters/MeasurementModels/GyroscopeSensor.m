@@ -1,35 +1,31 @@
-function [h, Hx, Hr] = PositionSensor2D(idx_x, idx_y)
+function [h, Hx, Hr] = GyroscopeSensor(idx_omega)
 
     % Global position sense    
     % See "5.6.1 Measurement models" from Course ChM015x
     
     % State vector assumed to include
-    %   x = [ x, y, ... ]
+    %   x = [ x, y, vx, vy, phi, omega, ... ]
     % Measurement vector:
-    %   z = [ zx, zy ]
+    %   z = [ z_omega ]
     % Noise vector:
-    %   r = [ r_x, r_ry ]    
+    %   r = [ r_omega ]    
     
     % Measurement model
-    %   z_x = x + r_x    
-    %   z_y = y + r_y
+    %   z_omega = omega + r_omega
     
     % x is state    
     % r is noise vector
     h = @(x, r) [ ...
-        x(idx_x) + r(1)
-        x(idx_y) + r(2)
+        x(idx_omega) + r(1)        
     ];
 
     % Jacobians of motion model
     Hx = @(x, r) [ ...
-        zeros(1, idx_x-1), 1, zeros(1, size(x,1)-idx_x)
-        zeros(1, idx_y-1), 1, zeros(1, size(x,1)-idx_y)
+        zeros(1, idx_omega-1), 1, zeros(1, size(x,1)-idx_omega)        
     ];
 
     Hr = @(x, r) [ ...
-        1, 0
-        0, 1
+        1        
     ];
 
 end

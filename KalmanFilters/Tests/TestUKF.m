@@ -34,7 +34,7 @@ R = diag([sigma_r_x^2, sigma_r_y^2]);
 meas = MeasurementModelHandler(h, R);
 
 %% Initialize Kalman filter
-kf = EKF;
+kf = UKF;
 
 % Define initial process covariance
 % x = [ x, y, v, phi, omega ]
@@ -45,19 +45,13 @@ sigma_omega = 1;
 P0 = diag([sigma_xy^2, sigma_xy^2, sigma_v^2, sigma_phi^2, sigma_omega^2]);
 
 x0 = [ x0(1), x0(2), 0.1, deg2rad(45), deg2rad(10) ]';
-%x0 = zeros(size(x0));
-kf = kf.init_discrete_jacobians(...
-                                f, Fx, Fu, Fq, Q, ...  % process model
-                                h, Hx, Hr, R, ...  % measurement model
-                                x0, P0);         
-     
-% OBS! Something seems to be wrong with the CoordinatedTurnModel Jacobian                            
-                            
-kf2 = kf.init_discrete(...
+%x0 = zeros(size(x0));                    
+kf = kf.init_discrete(...
                                 f, Q, ...  % process model
                                 h, R, ...  % measurement model
-                                x0, P0);                              
-                            
+                                x0, P0);                               
+                
+
 time = 0;                    
 true = x0';
 pred = kf.x';
