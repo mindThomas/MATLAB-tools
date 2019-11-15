@@ -1,5 +1,5 @@
 classdef DiscreteMotionModelHandler
-    properties (SetAccess = private)
+    properties %(SetAccess = private)
         x
     end
 	properties (Access = private)
