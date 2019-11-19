@@ -1,5 +1,5 @@
 classdef Histogram
-	properties (SetAccess = private)        
+	properties (SetAccess = protected)        
         BinWidth
         BinCenters
         Probabilities
@@ -58,13 +58,17 @@ classdef Histogram
             end
         end
 
-        function obj = propagate(obj, f)
+        function obj = normalize(obj)
+            obj.Probabilities = obj.Probabilities / sum(obj.Probabilities);
+        end
+        
+        function obj = transform(obj, f)
             f_test = f(obj.BinCenters(:,1));
             if (size(f_test,1) ~= size(obj.BinCenters,1))
-                error('Propagation does not yet support change of domain');
+                error('Transformation does not yet support change of domain');
             end
 
-            % Non-linear propagation of the histogram bins, assuming the state 
+            % Possibly Non-linear transformation of the histogram bins, assuming the state 
             % to be deterministic when conditioned on each bin
             % f is a propagation function on the form @(x) ...
             propagated_centers = zeros(size(obj.BinCenters));
