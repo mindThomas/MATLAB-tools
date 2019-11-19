@@ -91,10 +91,14 @@ classdef Gaussian
             l = E;
         end
         
-        function plot(obj, fig)
-            if (obj.n == 1)
-                % univariate distribution
+        function plot(obj, varargin)
+            if (nargin == 2)
+                fig = varargin{1};
                 figure(fig);
+            end
+
+            if (obj.n == 1)
+                % univariate distribution                
                 x_min = obj.Mu - 4 * obj.sqrtCov;
                 x_max = obj.Mu + 4 * obj.sqrtCov;
                 steps = 200;
@@ -104,8 +108,7 @@ classdef Gaussian
                 plot(x, p);
                 
             elseif (obj.n == 2)
-                % bivariate distribution
-                figure(fig);
+                % bivariate distribution                
                 [R, l] = obj.getCovarianceRotation();
                 
                 four_sigma_points = [
@@ -141,8 +144,7 @@ classdef Gaussian
                 
                 
             elseif (obj.n == 3)
-                % multivariate 3D distribution
-                figure(fig);
+                % multivariate 3D distribution                
                 [R, l] = obj.getCovarianceRotation();
                 
                 for (s = 1:3)                

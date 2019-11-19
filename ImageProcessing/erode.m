@@ -9,8 +9,8 @@ function out = erode(image)
     out_padded = false(size(in));
 
     for (x = 2:(size(in,2)-1))
-        for (y = 2:(size(in,2)-1))
-            out_padded(y,x) = prod(prod( s & in((y-1):(y+1),(x-1):(x+1) ))); % and operation
+        for (y = 2:(size(in,1)-1))
+            out_padded(y,x) = all(s & in((y-1):(y+1),(x-1):(x+1) ), 'all'); % and operation
         end
     end
 

@@ -49,18 +49,21 @@ classdef Uniform
             probability = obj.scaleFactor * probability;
         end                
         
-        function plot(obj, fig)
-            if (obj.n == 1)
-                % univariate distribution
+        function plot(obj, varargin)
+            if (nargin == 2)
+                fig = varargin{1};
                 figure(fig);
+            end
+
+            if (obj.n == 1)
+                % univariate distribution                
                 d = obj.x_max - obj.x_min;
                 x = [obj.x_min-d/10, obj.x_min, obj.x_max, obj.x_max+d/10];
                 p = obj.pdf(obj.x_min) * [0, 1, 0, 0];                
                 stairs(x, p);
                 
             elseif (obj.n == 2)
-                % bivariate distribution
-                figure(fig); 
+                % bivariate distribution                
                 d = obj.x_max - obj.x_min;
                 xmin = obj.x_min(1) - d(1)/10;
                 xmax = obj.x_max(1) + d(1)/10;
