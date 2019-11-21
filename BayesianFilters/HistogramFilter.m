@@ -3,19 +3,14 @@ classdef HistogramFilter < Histogram
     % See Table 4.1 in "Probabilistic Robotics" by Sebastian Thrun
     properties (Access = private)
         f % conditional PDF of the propagation distribution, p(x[k] | x[k-1]), on the form @(x, x_prev) ...
-        h % measurement function
+        h % conditional PDF of the measurement distribution, p(z[k] | x[k]), on the form @(x, z) ...
     end
     methods
         function obj = HistogramFilter(x_min, x_max, num_bins, f, h, init_pdf)           
             f_test = f(x_min, x_max);
             if (size(f_test,1) ~= size(x_min,1))
                 error('Histogram filtering does not yet support change of domain');
-            end
-            
-            h_test = h(x_min);
-            if (size(h_test,1) ~= 1)
-                error('Invalid measurement model PDF');
-            end            
+            end        
             
             obj = obj@Histogram(x_min, x_max, num_bins, init_pdf);
             obj.f = f;
@@ -48,7 +43,7 @@ classdef HistogramFilter < Histogram
             % rule
             for (k = 1:size(obj.BinCenters,2))
                 x = obj.BinCenters(:,k);
-                obj.Probabilities(k) = h(x) * obj.Probabilities(k);
+                obj.Probabilities(k) = obj.h(z,x) * obj.Probabilities(k);
             end
             
             % Normalize probabilities

@@ -8,7 +8,7 @@ classdef Histogram
         n
     end
     methods
-        function obj = Histogram(x_min, x_max, num_bins, pdf)
+        function obj = Histogram(x_min, x_max, num_bins, varargin)
             % pdf is a continuous PDF function on the form @(x) ...
             if (size(x_min, 1) ~= size(x_max, 1))
                 error('Inconsistent vector sizes');
@@ -30,10 +30,41 @@ classdef Histogram
                                   repmat(individual_bin_centers{i}, 1, size(obj.BinCenters,2))];
             end
 
-            % Evaluate PDF at all bin centers
-            obj.Probabilities = zeros(1, size(obj.BinCenters, 2));
-            for (i = 1:size(obj.BinCenters, 2))
-                obj.Probabilities(i) = pdf(obj.BinCenters(:,i));
+            if (nargin == 4 || nargin == 5)
+                if (isa(varargin{1},'function_handle'))
+                    pdf = varargin{1};
+                    
+                    % Evaluate PDF at all bin centers
+                    obj.Probabilities = zeros(1, size(obj.BinCenters, 2));
+                    for (i = 1:size(obj.BinCenters, 2))
+                        obj.Probabilities(i) = pdf(obj.BinCenters(:,i));
+                    end
+                else
+                    samples = varargin{1};
+                    weights = [];
+                    if (nargin == 5)
+                        weights = varargin{2};
+                    end                    
+                    if (size(x_min, 1) ~= size(samples, 1))
+                        error('Inconsistent samples size');
+                    end
+                    
+                    % Count the samples into each bin
+                    obj.Probabilities = zeros(1, size(obj.BinCenters, 2));
+                    for (i = 1:size(obj.BinCenters, 2))                
+                        xmin = obj.BinCenters(:,i) - obj.BinWidth/2;
+                        xmax = obj.BinCenters(:,i) + obj.BinWidth/2;
+                        for (j = 1:size(samples, 2))
+                            if (prod(samples(:,j) >= xmin) && prod(samples(:,j) <= xmax))
+                                if (isempty(weights))
+                                    obj.Probabilities(i) = obj.Probabilities(i) + 1;
+                                else
+                                    obj.Probabilities(i) = obj.Probabilities(i) + weights(j);
+                                end
+                            end
+                        end
+                    end                            
+                end
             end
 
             % Normalize histogram

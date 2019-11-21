@@ -1,4 +1,4 @@
-function [x, weights] = ImportanceSampling(target_pdf, proposal_distribution, n_realizations)
+function [x, weights] = ImportanceSampling_WeightedSamples(target_pdf, proposal_distribution, n_realizations)
     % See "7.2.1 Monte Carlo (MC) and Importance Sampling (IS)" from Course ChM015x
     % 
     % Use Importance Sampling to draw approximate realizations from a 
