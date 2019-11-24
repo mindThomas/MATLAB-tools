@@ -8,6 +8,9 @@ classdef SIRFilter < BootstrapSISFilter
     % The SIR filter fixes this by implementing a Resambling technique
     % -> After resampling all particles will have equal weight
     % See "7.4.1 Sequential Importance Resampling (SIR)" from Course ChM015x
+    %
+    % Note that Particle filters suffers from the curse of dimensionality
+    % and are intractable at higher dimensions
 	%properties %(SetAccess = private)
     %    particles % state vectors of all particles (each column)
     %    weights
@@ -15,36 +18,30 @@ classdef SIRFilter < BootstrapSISFilter
     %properties (Access = private)
     %    propagation_proposal_distribution % conditional distribution object from which samples can be drawn with .draw(x_prev)
     %    propagation_pdf % conditional PDF of the propagation distribution, p(x[k] | x[k-1]), on the form @(x, x_prev) ...
-    %    measurement_pdf % conditional PDF of the measurement distribution, p(z[k] | x[k]), on the form @(x, z) ...        
+    %    measurement_pdf % conditional PDF of the measurement distribution, p(z[k] | x[k]), on the form @(z, x) ...        
     %end  
     methods
         function obj = SIRFilter(propagation_proposal_distribution, propagation_pdf, measurement_pdf)                        
             obj = obj@BootstrapSISFilter(propagation_proposal_distribution, propagation_pdf, measurement_pdf);
         end        
-        
-        function obj = init(obj, n_particles, initial_distribution)
-            % Initialize particle states by drawing an initial distribution and set a uniform weight            
-            obj.particles = zeros(length(x_min), n_particles);
-            obj.weights = 1/n_particles * ones(1, n_particles);
-            for (j = 1:size(obj.particles, 2))
-                obj.particles(:,j) = initial_distribution.draw();
+                
+        function obj = filter(obj, z)
+            % Propagate and update using SIS Filter
+            obj = filter@BootstrapSISFilter(obj, z);
+            
+            % The SIR filter is different in the way that the particles are
+            % resampled after updating/recomputing the weights
+            N = size(obj.particles, 2);
+            if (obj.getEffectiveNumberOfParticles() < N/4)
+                obj = obj.resample();
             end
-        end 
+        end
         
         function Neff = getEffectiveNumberOfParticles(obj)
             Neff = 1 / sum(obj.weights.^2);
             % Consider to resample when this number goes below N/4
         end
         
-        function obj = filter(obj, z)
-            obj = filter@BootstrapSISFilter(obj, z);
-            
-            N = size(obj.particles, 2);
-            if (obj.getEffectiveNumberOfParticles() < N/4)
-                obj = obj.resample();
-            end
-        end
-                
     end
     
     methods (Access = private)
@@ -66,7 +63,7 @@ classdef SIRFilter < BootstrapSISFilter
                 old_particle_idx = length(resampling_wheel);
                 for (j = 2:length(resampling_wheel))
                     if (resampling_wheel(j) > sample)
-                        old_particle_idx = j - 1;
+                        old_particle_idx = j;
                         break;
                     end
                 end

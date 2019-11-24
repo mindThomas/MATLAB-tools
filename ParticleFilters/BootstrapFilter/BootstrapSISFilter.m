@@ -10,7 +10,7 @@ classdef BootstrapSISFilter
     properties %(Access = private)
         propagation_proposal_distribution % conditional distribution object from which samples can be drawn with .draw(x_prev)
         propagation_pdf % conditional PDF of the propagation distribution, p(x[k] | x[k-1]), on the form @(x, x_prev) ...
-        measurement_pdf % conditional PDF of the measurement distribution, p(z[k] | x[k]), on the form @(x, z) ...        
+        measurement_pdf % conditional PDF of the measurement distribution, p(z[k] | x[k]), on the form @(z, x) ...        
     end  
     methods
         function obj = BootstrapSISFilter(propagation_proposal_distribution, propagation_pdf, measurement_pdf)                        
@@ -30,9 +30,14 @@ classdef BootstrapSISFilter
         
         function obj = filter(obj, z)
             for (j = 1:size(obj.particles, 2))
+                % Propagate particles by drawing a new state from the
+                % proposal distribution
                 x_prev = obj.particles(:,j);
                 x = obj.propagation_proposal_distribution.draw(x_prev);
                 
+                % Update the weight of the particle according to the
+                % measurement likelihood multiplied with the proposal to
+                % target distribution ratio
                 likelihood = obj.measurement_pdf(z, x);
                 proposal_ratio = obj.propagation_pdf(x, x_prev) / obj.propagation_proposal_distribution.pdf(x, x_prev);
                 
@@ -69,6 +74,19 @@ classdef BootstrapSISFilter
             % MAP = Find the most propable particle (highest weight)
             [val,idx] = max(obj.weights);
             x_hat = obj.particles(:,idx);
+        end
+        
+        function mean = getNonlinearExpectation(obj, g)
+            % Compute the expectation of a non-linear function with the
+            % input set to the distribution modelled by the particle filter
+            % E[g(x)]
+            % where x ~ PF
+            % and the function is defined as @(x) ...            
+            test_input = zeros(size(obj.particles, 1), 1);
+            mean = zeros(size(g(test_input), 1), 1);            
+            for (j = 1:size(obj.particles, 2))
+                mean = mean + obj.weights(j) * g(obj.particles(:,j)); 
+            end
         end
             
     end
