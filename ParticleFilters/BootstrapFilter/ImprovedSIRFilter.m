@@ -1,4 +1,4 @@
-classdef SIRFilter < BootstrapSISFilter
+classdef ImprovedSIRFilter < SIRFilter
     % Sequential importance Resampling filter implementation
     % The problem with the SIS filter is the degeneracy of the particles
     % (all but only one or a few particles have negligible=almost zero weight)
@@ -20,14 +20,50 @@ classdef SIRFilter < BootstrapSISFilter
     %    propagation_pdf % conditional PDF of the propagation distribution, p(x[k] | x[k-1]), on the form @(x, x_prev) ...
     %    measurement_pdf % conditional PDF of the measurement distribution, p(z[k] | x[k]), on the form @(z, x) ...        
     %end  
+    properties (Access = private)
+        % To help with particle deprivation, particles are sampled from a
+        % uniform distribution with probability, p, instead of being
+        % sampled from the motion model
+        uniform_sampling_distribution
+        uniform_sampling_probability
+    end
     methods
-        function obj = SIRFilter(propagation_proposal_distribution, propagation_pdf, measurement_pdf)                        
-            obj = obj@BootstrapSISFilter(propagation_proposal_distribution, propagation_pdf, measurement_pdf);
+        function obj = ImprovedSIRFilter(propagation_proposal_distribution, propagation_pdf, measurement_pdf, uniform_sampling_distribution, uniform_sampling_probability)
+            obj = obj@SIRFilter(propagation_proposal_distribution, propagation_pdf, measurement_pdf);
+            obj.uniform_sampling_distribution = uniform_sampling_distribution; % use this for 
+            obj.uniform_sampling_probability = uniform_sampling_probability;
         end        
                 
         function obj = filter(obj, z)
-            % Propagate and update using SIS Filter
-            obj = filter@BootstrapSISFilter(obj, z);
+            uniform_samples = rand(size(obj.particles, 2), 1);
+            for (j = 1:size(obj.particles, 2))
+                % Propagate particles by drawing a new state from the
+                % proposal distribution
+                % However to reduce particle deprivation, draw a sample
+                % from a general (preferably uniform) distribution with
+                % probability (uniform_sampling_probability) to add some
+                % random particles over the operating space
+                x_prev = obj.particles(:,j);
+                if (uniform_samples(j) <= obj.uniform_sampling_probability)
+                    x = obj.uniform_sampling_distribution.draw();
+                else
+                    x = obj.propagation_proposal_distribution.draw(x_prev);
+                end
+                
+                % Update the weight of the particle according to the
+                % measurement likelihood multiplied with the proposal to
+                % target distribution ratio
+                likelihood = obj.measurement_pdf(z, x);
+                proposal_pdf = obj.uniform_sampling_probability * obj.uniform_sampling_distribution.pdf(x) + ...
+                               (1-obj.uniform_sampling_probability) * obj.propagation_proposal_distribution.pdf(x, x_prev);
+                proposal_ratio = obj.propagation_pdf(x, x_prev) / proposal_pdf;
+                
+                obj.particles(:,j) = x;
+                obj.weights(j) = obj.weights(j) * likelihood * proposal_ratio;
+            end             
+            
+            % Normalize weights
+            obj.weights = obj.weights / sum(obj.weights);        
             
             % The SIR filter is different in the way that the particles are
             % resampled after updating/recomputing the weights
@@ -46,7 +82,9 @@ classdef SIRFilter < BootstrapSISFilter
             % the weight variance is high and resampling should be performed
             N = size(obj.particles, 2);
             if (obj.getEffectiveNumberOfParticles() < N/4)
-                obj = obj.resample();
+                disp('Resampling');
+                %obj = obj.resample();
+                obj = obj.low_variance_resample();                
             end
         end
         
@@ -57,36 +95,44 @@ classdef SIRFilter < BootstrapSISFilter
         
     end
     
-    methods (Access = protected)
-        function obj = resample(obj)
-            % Draw N samples with replacement from the current set of
-            % particles with the probability of drawing a particular
-            % particle defined according to its' weight.
+    methods (Access = private)
+        function obj = low_variance_resample(obj)
+            % Draw N samples from the current set as a sequential stochastic
+            % process with the probability of drawing a particular particle
+            % defined according to its' weight. Note that this is different
+            % from the normal resampling strategy where samples are drawn
+            % independently.
             %
             % The resampling step is a probabilistic implementation of the
             % Darwinian idea of survival of the fittest: It refocuses the
             % particle set to regions in state space with high posterior
             % probability
             %
-            % We draw the samples by drawing a number from a uniform
-            % distribution between 0 to 1 and then using a cumulated sum
+            % We draw the samples by drawing ONE random number, r, from a
+            % uniform distribution between 0 to 1/N and then using a cumulated sum
             % lookup table to find the index of the according particle.
             new_particles = zeros(size(obj.particles));
                         
             resampling_wheel = cumsum(obj.weights);
-            uniform_samples = rand(1, size(obj.particles, 2));
+            N = size(obj.particles, 2);
+            r = rand(1, 1) / N;  
+            u = r;
+            % OBS. That the below can be optimized (made more efficiently)
+            % according to the algorithm "Algorithm Low variance sampler"
+            % in Probabilistic Robotics by Sebastian Thrun
             for (i = 1:size(obj.particles, 2))                
                 % Perform resampling wheel and look up in table to find
-                % matching index
-                sample = uniform_samples(i);
+                % matching index starting from the selected random weight,
+                % r, and moving 1/N at each time                                
                 old_particle_idx = length(resampling_wheel);
                 for (j = 2:length(resampling_wheel))
-                    if (resampling_wheel(j) > sample)
+                    if (resampling_wheel(j) > u)
                         old_particle_idx = j;
                         break;
                     end
                 end
                 new_particles(:,i) = obj.particles(:,old_particle_idx);
+                u = u + 1/N;
             end
             obj.particles = new_particles;
             

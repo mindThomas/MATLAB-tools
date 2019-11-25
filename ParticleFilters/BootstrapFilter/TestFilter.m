@@ -9,9 +9,11 @@ y = @(x) (x.^2/20);
 cov = 1;
 measurement = ConditionalNonlinearWithAdditiveGaussian(y, cov);
 
-% Create SIS filter
+% Create filter testing
 %sis = BootstrapSISFilter(propagation, @(x,y)propagation.pdf(x,y), @(x,y)measurement.pdf(x,y));
-sis = SIRFilter(propagation, @(x,y)propagation.pdf(x,y), @(x,y)measurement.pdf(x,y));
+%sis = SIRFilter(propagation, @(x,y)propagation.pdf(x,y), @(x,y)measurement.pdf(x,y));
+uniform_distribution = Uniform(-15, 25);
+sis = ImprovedSIRFilter(propagation, @(x,y)propagation.pdf(x,y), @(x,y)measurement.pdf(x,y), uniform_distribution, 0*0.05);
 
 % Initialize particles by Importance sampling a uniform distribution center
 % along a Gaussian target PDF with mean around the true test state
