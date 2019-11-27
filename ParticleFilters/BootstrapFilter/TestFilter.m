@@ -12,8 +12,10 @@ measurement = ConditionalNonlinearWithAdditiveGaussian(y, cov);
 % Create filter testing
 %sis = BootstrapSISFilter(propagation, @(x,y)propagation.pdf(x,y), @(x,y)measurement.pdf(x,y));
 %sis = SIRFilter(propagation, @(x,y)propagation.pdf(x,y), @(x,y)measurement.pdf(x,y));
-uniform_distribution = Uniform(-15, 25);
-sis = ImprovedSIRFilter(propagation, @(x,y)propagation.pdf(x,y), @(x,y)measurement.pdf(x,y), uniform_distribution, 0*0.05);
+%uniform_distribution = Uniform(-15, 25);
+%sis = ImprovedSIRFilter(propagation, @(x,y)propagation.pdf(x,y), @(x,y)measurement.pdf(x,y), uniform_distribution, 0*0.05);
+sis = AdaptiveParticleFilter(propagation, @(x,y)propagation.pdf(x,y), @(x,y)measurement.pdf(x,y));
+sis = sis.initKLD(-15, 25, 75, 0.05, 0.05, 10);
 
 % Initialize particles by Importance sampling a uniform distribution center
 % along a Gaussian target PDF with mean around the true test state

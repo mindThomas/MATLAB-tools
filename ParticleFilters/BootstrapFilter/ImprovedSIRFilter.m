@@ -24,6 +24,13 @@ classdef ImprovedSIRFilter < SIRFilter
         % To help with particle deprivation, particles are sampled from a
         % uniform distribution with probability, p, instead of being
         % sampled from the motion model
+        % Particle deprivation = When performing estimation in a
+        % high-dimensional space there may be no particles in the vicinity
+        % to the correct state. Particle deprivation occurs as
+        % the result of random resampling; an unlucky series of random 
+        % numbers can wipe out all particles near the true state. 
+        % In practice, problems of this nature only tend to arise when M is small relative
+        % to the space of all states with high likelihood
         uniform_sampling_distribution
         uniform_sampling_probability
     end
@@ -33,7 +40,7 @@ classdef ImprovedSIRFilter < SIRFilter
             obj.uniform_sampling_distribution = uniform_sampling_distribution; % use this for 
             obj.uniform_sampling_probability = uniform_sampling_probability;
         end        
-                
+        
         function obj = filter(obj, z)
             uniform_samples = rand(size(obj.particles, 2), 1);
             for (j = 1:size(obj.particles, 2))
@@ -56,7 +63,7 @@ classdef ImprovedSIRFilter < SIRFilter
                 likelihood = obj.measurement_pdf(z, x);
                 proposal_pdf = obj.uniform_sampling_probability * obj.uniform_sampling_distribution.pdf(x) + ...
                                (1-obj.uniform_sampling_probability) * obj.propagation_proposal_distribution.pdf(x, x_prev);
-                proposal_ratio = obj.propagation_pdf(x, x_prev) / proposal_pdf;
+                proposal_ratio = obj.propagation_pdf(x, x_prev) / proposal_pdf;                                
                 
                 obj.particles(:,j) = x;
                 obj.weights(j) = obj.weights(j) * likelihood * proposal_ratio;
@@ -84,9 +91,10 @@ classdef ImprovedSIRFilter < SIRFilter
             if (obj.getEffectiveNumberOfParticles() < N/4)
                 disp('Resampling');
                 %obj = obj.resample();
-                obj = obj.low_variance_resample();                
+                %obj = obj.low_variance_resample();                
+                obj = obj.efficient_low_variance_resample();
             end
-        end
+        end                
         
         function Neff = getEffectiveNumberOfParticles(obj)
             Neff = 1 / sum(obj.weights.^2);
@@ -102,6 +110,9 @@ classdef ImprovedSIRFilter < SIRFilter
             % defined according to its' weight. Note that this is different
             % from the normal resampling strategy where samples are drawn
             % independently.
+            %
+            % Note also that this type of sampling does not require the
+            % weights to be normalized (sum to one)
             %
             % The resampling step is a probabilistic implementation of the
             % Darwinian idea of survival of the fittest: It refocuses the
@@ -139,5 +150,48 @@ classdef ImprovedSIRFilter < SIRFilter
             % Set all the weights and uniformly
             obj.weights = ones(size(obj.weights)) / size(obj.particles, 2);
         end
+        
+        function obj = efficient_low_variance_resample(obj)
+            % Draw N samples from the current set as a sequential stochastic
+            % process with the probability of drawing a particular particle
+            % defined according to its' weight. Note that this is different
+            % from the normal resampling strategy where samples are drawn
+            % independently.
+            %
+            % Note also that this type of sampling does not require the
+            % weights to be normalized (sum to one)
+            %
+            % The resampling step is a probabilistic implementation of the
+            % Darwinian idea of survival of the fittest: It refocuses the
+            % particle set to regions in state space with high posterior
+            % probability
+            %
+            % We draw the samples by drawing ONE random number, r, from a
+            % uniform distribution between 0 to 1/N and then using a cumulated sum
+            % lookup table to find the index of the according particle.
+            new_particles = zeros(size(obj.particles));                                    
+            N = size(obj.particles, 2);
+            r = rand(1, 1) / N;  % draw random number between 0 to 1/N 
+            u = r;
+            accumulated_weight = obj.weights(:,1);
+            particle_index = 1;            
+            for (i = 1:size(obj.particles, 2))                
+                % Perform resampling wheel and look up in table to find
+                % matching index starting from the selected random weight,
+                % r, and moving 1/N at each time                                
+                while (u > accumulated_weight)
+                    particle_index = particle_index + 1;
+                    accumulated_weight = accumulated_weight + obj.weights(:,particle_index);
+                end
+                new_particles(:,i) = obj.particles(:,particle_index);
+                u = u + 1/N;
+            end
+            obj.particles = new_particles;
+            
+            % Set all the weights and uniformly
+            % Note that this step can be omitted when using this type of
+            % sampling
+            obj.weights = ones(size(obj.weights)) / size(obj.particles, 2);
+        end          
     end
 end
