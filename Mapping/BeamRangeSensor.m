@@ -23,11 +23,11 @@ classdef BeamRangeSensor
             obj.z_max = max_range;
             obj.var_hit = var_hit; 
             
-            obj.lambda_short = 0.01;
+            obj.lambda_short = 0.5;
             obj.w_hit = 1.0;
-            obj.w_short = 1.0;
-            obj.w_max = 1.0;
-            obj.w_rand = 1.0;
+            obj.w_short = 1.25;
+            obj.w_max = 0.5;
+            obj.w_rand = 0*1.0;
             
             % Normalize weights
             eta = obj.w_hit + obj.w_short + obj.w_max + obj.w_rand;
@@ -47,6 +47,36 @@ classdef BeamRangeSensor
         function z = measurement_deterministic(obj, pose, map)
             z = obj.ray_tracing_hit(pose, map);
         end               
+        
+        function [cell_value, cell_found] = inverse_measurement_hit(obj, range_measurement, pose, map)
+            % Do a simple lookup in the map                        
+            % Compute the location of the captured cell            
+            x_z = pose(1) + range_measurement * cos(pose(3) + obj.azimuth_angle_rad);
+            y_z = pose(2) + range_measurement * sin(pose(3) + obj.azimuth_angle_rad);
+            
+            if (x_z >= map.pmin(1) && x_z <= map.pmax(1) && ...
+                y_z >= map.pmin(2) && y_z <= map.pmax(2))
+                [row,col] = map.getRowCol(x_z, y_z);
+                cell_found = true;   
+                cell_value = map.grid(row,col);
+                return;
+            end
+            
+            % Cell is outside the map
+            cell_found = false;
+            cell_value = 0.5;                                      
+        end 
+        
+        function p = inverse_measurement_probability(obj, range_measurement, pose, map)
+            range = obj.ray_tracing_hit(pose, map);
+            
+            p = (...
+                obj.w_hit   * obj.p_hit(range_measurement, range) ...
+              + obj.w_short * obj.p_short(range_measurement, range) ...
+              + obj.w_max   * obj.p_max(range_measurement, range) ...
+              + obj.w_rand  * obj.p_rand(range_measurement, range) ...
+              );            
+        end                 
         
         function probability_map = inverse_measurement(obj, range_measurement, pose, occupancy_map)
             % Generate an inverse measurement model probability map
@@ -335,7 +365,7 @@ classdef BeamRangeSensor
     methods (Access = private)
         % Correct range with local measurement noise
         function p = p_hit(obj, z, z_deterministic)            
-            if (z >= 0 && z <= obj.z_max)
+            if (z >= 0 && z <= obj.z_max && z_deterministic < obj.z_max)
                 eta = normcdf(obj.z_max, z, obj.var_hit) - normcdf(0, z, obj.var_hit); % normalization factor (equation 6.6)
                 p = normpdf(z, z_deterministic, obj.var_hit) / eta;
             else

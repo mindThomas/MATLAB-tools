@@ -19,10 +19,10 @@ classdef CarSim
     methods
         function obj = CarSim(dt, map, angle)
             obj.pose = [0; 0; 0];
-            lidar_beams = (0:10:359)';
+            lidar_beams = (-100:25:100)';
             for (i = 1:length(lidar_beams))
                 azimuth = lidar_beams(i);
-                obj.lidar_beam_sensors{i} = BeamRangeSensor(deg2rad(azimuth), deg2rad(2), 20, 0.02);
+                obj.lidar_beam_sensors{i} = BeamRangeSensor(deg2rad(azimuth), deg2rad(2), 20, 0.2);
             end
             %obj.lidar_beam_sensors{1} = BeamRangeSensor(deg2rad(angle), deg2rad(2), 20, 0.2);
             
@@ -82,16 +82,16 @@ classdef CarSim
             obj.pose = obj.f(obj.pose, u, q);
         end
         
-        function scan = getLiDAR2D_Deterministic(obj)
+        function obj = captureLiDAR2D_Deterministic(obj)
             % Do ray-casting on the map to generate 'lidar_beams' number of
             % beams
-            scan = zeros(length(obj.lidar_beam_sensors), 1);
+            obj.latest_scan = zeros(length(obj.lidar_beam_sensors), 1);
             for (i = 1:length(obj.lidar_beam_sensors))
-                scan(i) = obj.lidar_beam_sensors{i}.measurement_deterministic(obj.pose, obj.map);
+                obj.latest_scan(i) = obj.lidar_beam_sensors{i}.measurement_deterministic(obj.pose, obj.map);
             end                                     
         end
         
-        function scan = getLiDAR2D_Stochastic(obj)
+        function obj = captureLiDAR2D_Stochastic(obj)
             % Call getLiDAR2D_Deterministic() but add stochastic properties
             % according to the range-bearing measurement model from
             % Probabilistic Robotics
@@ -132,14 +132,25 @@ classdef CarSim
         end
         
         function plotParticles(obj, poses)
-            plot(poses(1,:), poses(2,:), '.', 'MarkerSize', 10);
+            % Plot mean robot pose    
+            % Draw circle of robot center
+            meanpose = mean(poses,2);
+            pos = [meanpose(1:2)'-obj.robot_radius 2*obj.robot_radius 2*obj.robot_radius]; % [ [x y] width height ]            
+            rectangle('Position', pos, 'Curvature', [1 1], 'EdgeColor', 'k', 'LineWidth', 1, 'LineStyle', '--');
             hold on;
-            quiver(poses(1,:), poses(2,:), cos(poses(3,:)), sin(poses(3,:)), 1);
+            % Draw heading direction
+            d_heading = obj.robot_radius * [cos(meanpose(3)); sin(meanpose(3))];
+            p(1:2,1) = meanpose(1:2);
+            p(1:2,2) = p(1:2,1) + d_heading;
+            plot(p(1,:), p(2,:), 'k-', 'LineWidth', 2);
+                        
+            plot(poses(1,:), poses(2,:), '.', 'MarkerSize', 10);            
+            quiver(poses(1,:), poses(2,:), cos(poses(3,:)), sin(poses(3,:)), 1);            
+            
             hold off;
+            axis equal; % Make axes grid sizes equal
             xlim([obj.map.pmin(1), obj.map.pmax(1)]);
-            ylim([obj.map.pmin(2), obj.map.pmax(2)]);
-            axis equal;
-            grid;
+            ylim([obj.map.pmin(2), obj.map.pmax(2)]);   
         end
     end
 end

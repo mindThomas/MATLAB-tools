@@ -1,5 +1,5 @@
 map = OccupancyGrid([0,0], [20,20], [0.1, 0.1]);
-map = grid.load('example.bmp');
+map = map.load('example.bmp');
 
 occupancy = OccupancyGrid([0,0], [20,20], [0.1, 0.1]);
 
@@ -12,7 +12,7 @@ car.pose(3) = 0;
 for (i = 1:200)
 figure(1);
 car = car.move(2, 0.5, true);
-car.latest_scan = car.getLiDAR2D_Deterministic();
+car = car.captureLiDAR2D_Deterministic();
 car.plot();
 
 measurement_likelihood_field = car.lidar_beam_sensors{1}.inverse_measurement_simple(car.latest_scan(1), car.pose, occupancy);

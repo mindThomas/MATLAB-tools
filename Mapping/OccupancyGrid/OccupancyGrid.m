@@ -25,10 +25,13 @@ classdef OccupancyGrid
         
         function obj = load(obj, filename)
             im = imread(filename);
+            if (length(size(im)) == 3)
+                im = rgb2gray(im);
+            end            
             if (size(im, 1) ~= size(obj.grid, 1) || size(im, 2) ~= size(obj.grid, 2))
                 error('Incorrect map resolution');
             end
-            obj.grid = 1-im;
+            obj.grid = 1-double(im);
         end
         
         function obj = RangeBearing_Update(obj, likelihood_field)

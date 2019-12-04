@@ -20,8 +20,10 @@ classdef BootstrapSISFilter
         end        
         
         function obj = init(obj, n_particles, initial_distribution)
+            tmp = initial_distribution.draw();
+            
             % Initialize particle states by drawing an initial distribution and set a uniform weight            
-            obj.particles = zeros(length(x_min), n_particles);
+            obj.particles = zeros(length(tmp), n_particles);
             obj.weights = 1/n_particles * ones(1, n_particles);
             for (j = 1:size(obj.particles, 2))
                 obj.particles(:,j) = initial_distribution.draw();

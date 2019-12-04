@@ -160,8 +160,8 @@ classdef AdaptiveParticleFilter < SIRFilter
             for (i = 1:size(obj.BinCenters, 2))                
                 xmin = obj.BinCenters(:,i) - obj.BinWidth/2;
                 xmax = obj.BinCenters(:,i) + obj.BinWidth/2;
-                % Determine if sampled particle belongs to bin
-                if (sampled_particle >= xmin && sampled_particle <= xmax)
+                % Determine if sampled particle belongs to bin                
+                if (prod(sampled_particle >= xmin) && prod(sampled_particle <= xmax))
                     obj.BinOccupied(i) = true;
                     return;
                 end
