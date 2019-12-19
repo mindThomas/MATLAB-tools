@@ -1,12 +1,35 @@
-classdef EKF
+classdef EIF
+    % Extended Information Filter
+    % The information filter implemented the Kalman filter in Logarithmic form
+    % The key difference between the EKF and the EIF arises from the way
+    % the Gaussian belief is represented. Whereas in the Kalman filter family of algorithms,
+    % Gaussians are represented by their moments (mean, covariance), information filters
+    % represent Gaussians in their canonical representation, which is comprised of an information
+    % matrix and an information vector.
+    % 
+    % See Chapter 3.4.3 of Probabilistic Robotics by Sebastian Thrun
+    % See also http://ais.informatik.uni-freiburg.de/teaching/ws12/mapping/pdf/slam06-eif.pdf
+    %
+    % The measurement update is the difficult step in Kalman filters.
+    % But for the information filter measurement updates are additive and
+    % are even more efficient if measurements carry only information about a subset of
+    % all state variables at a time.
+    %
+    % Note how the information filter supports global/infinite uncertainty
+    % by setting the information matrix to 0
+    %
+    % OBS: For high dimensional state spaces, the information filter is
+    % generally believed to be computationally inferior to (worse than) the Kalman filter.
+    % In fact, this is one of the reasons why the EKF has been vastly more
+    % popular than the EIF.
 	properties %(SetAccess = private)
-        x        
+        xi % information vector = P^-1 * mu = Omega * mu
     end    
 	properties (SetAccess = private)        
-        P
+        Omega % information matrix = is the inverse of the covariance matrix P
         K
         S
-    end        
+    end       
     properties (SetAccess = private)%(Access = private)
         f        
         h
@@ -25,10 +48,22 @@ classdef EKF
         Hr
     end    
     methods
-        function obj = EKF(varargin)                        
+        function obj = EIF(varargin)                        
 
         end        
+        
+        function [x, P] = getEstimate(obj)
+            % Function to convert from information vector and
+            % information matrix to estimate mean and covarinace
+            P = inv(obj.Omega);
+            x = P * obj.xi;
+        end
 
+        function obj = setState(obj, x)
+            % Function to convert from estimate mean to information vector
+            obj.xi = obj.Omega * x;
+        end
+        
         function obj = init_continuous(obj, f, Qc, ts, h, R, x_init, P_init)
             % Prediction model is on the form:
             %   dx = f(x, u, q)
@@ -38,8 +73,8 @@ classdef EKF
             obj.f = f;
             obj.h = h;
             obj.JacobiansAvailable = false;
-            obj.x = x_init;
-            obj.P = P_init; 
+            obj.Omega = inv(P_init);
+            obj.xi = obj.Omega * x_init;            
             obj.ts = ts;
             obj.Q = Qc;
             obj.R = R;
@@ -61,8 +96,8 @@ classdef EKF
             obj.Hx = Hx;
             obj.Hr = Hr;            
             obj.JacobiansAvailable = true;
-            obj.x = x_init;
-            obj.P = P_init; 
+            obj.Omega = inv(P_init);
+            obj.xi = obj.Omega * x_init;                        
             obj.ts = ts;
             obj.Q = Qc;
             obj.R = R;
@@ -80,8 +115,8 @@ classdef EKF
             obj.f = f;
             obj.h = h;      
             obj.JacobiansAvailable = false;
-            obj.x = x_init;
-            obj.P = P_init;
+            obj.Omega = inv(P_init);
+            obj.xi = obj.Omega * x_init;            
             obj.ts = 0;
             obj.Q = Q;
             obj.R = R;
@@ -104,8 +139,8 @@ classdef EKF
             obj.Hx = Hx;
             obj.Hr = Hr;
             obj.JacobiansAvailable = true;
-            obj.x = x_init;
-            obj.P = P_init;
+            obj.Omega = inv(P_init);
+            obj.xi = obj.Omega * x_init;            
             obj.ts = 0;
             obj.Q = Q;
             obj.R = R;
@@ -127,6 +162,10 @@ classdef EKF
         end
         
         function obj = update(obj, z)
+            % Compute current state
+            P = inv(obj.Omega);
+            x = P * obj.xi;
+            
             % Measurement model is on the form:
             %   z = h(x, r)          [ defined with h = @(x,r) ... ]
             %   where r ~ N(0, R)
@@ -137,73 +176,29 @@ classdef EKF
             %   Hr = dh(x,r)/dr|x=x0,r=0
             r = zeros(size(obj.R,1),1); % no noise
             if (obj.JacobiansAvailable)
-                dhdx = obj.Hx(obj.x, r);
-                dhdr = obj.Hr(obj.x, r);
+                dhdx = obj.Hx(x, r);
+                dhdr = obj.Hr(x, r);
             else
-                [dhdx, dhdr] = numjacobian2(obj.h, obj.x, r);  
+                [dhdx, dhdr] = numjacobian2(obj.h, x, r);  
             end            
             H = dhdx;
             % The above is written differently with noise affecting the states directly
             %   z = h(x_prior, 0) + Hx*(x-x_prior) + r_x
             %   where r_x ~ N(0, Hr*R*Hr')            
-            Rx = dhdr * obj.R * dhdr';           
+            Rx = dhdr * obj.R * dhdr';                                   
             
-            % From the measurement model a predicted measurement is computed
-            z_hat = obj.h(obj.x, r); % with r=0
-            % Compute innovation
-            innov = z - z_hat;
-            % Compute innovation variance
-            obj.S = H * obj.P * H' + Rx;
-            % Compute Kalman gain
-            obj.K = obj.P * H' / obj.S;
-            % Compute posterior estimate
-            obj.x = obj.x + obj.K * innov;
-            % Compute posterior estimation error variance
-            %obj.P = obj.P - obj.K * obj.S * obj.K';
-            obj.P = obj.P - obj.K * H * obj.P;
-        end
-    
-        function x = sampleProcessModel(obj, u)
-            % Generate a realization from the process model based on x and Q
-            % Generate noise realization, q[k] ~ N(0, Q)
-            q = obj.Q_sqrt * randn([size(obj.Bq, 2), 1]);
-            % Apply the process model
-            x = obj.x0 + ...
-                obj.f0 + ...
-                obj.A * (obj.x - obj.x0) + ...                
-                obj.Bq * q;   
-            if (~isempty(obj.B))
-                x = x + ...
-                    obj.B * (u - obj.u0);
-            end            
-        end 
-        
-        function z = sampleMeasurementModel(obj)
-            % Generate a realization from the measurement model based on x and R
-            % Generate noise realization, r ~ N(0, R)
-            r = obj.R_sqrt * randn([size(obj.Hr, 2), 1]);
-            % Apply the linearized measurement model
-            z = obj.h0 + obj.H * (obj.x - obj.x0) + obj.Hr * r;
-        end 
-        
-        function x = samplePosterior(obj)
-           % Generate a realization of the state based on x and P
-           P_sqrt = chol(obj.P, 'lower');
-           % Generate estimation error noise realization
-           p = P_sqrt * randn([size(obj.P, 1), 1]);
-           % Compose estimate and noise into realization
-           x = obj.x + p;
-        end
-                
-        function z = sampleMeasurement(obj)
-            % Generate a realization of a measurement based on a
-            % realization of the state and the measurement noise
-            x = samplePosterior();
-            % Generate noise realization, r ~ N(0, R)
-            r = obj.R_sqrt * randn([size(obj.Hr, 2), 1]);
-            % Apply the linearized measurement model
-            z = obj.h0 + obj.H * (x - obj.x0) + obj.Hr * r;
-        end           
+            % Compute posterior information matrix
+            invR = inv(Rx);
+            obj.Omega = obj.Omega + H' * invR * H;
+            
+            % Compute predicted measurement
+            z_hat = obj.h(x, r); % with r=0
+            % Compute posterior information vector
+            obj.xi = obj.xi + H' * invR * (z - z_hat + H * x);    
+            % Note that this equation is different from Table 3.5 in
+            % Probabilistic Robotics, which has an sign in front of H*x. Instead
+            % the correct equation is shown in http://ais.informatik.uni-freiburg.de/teaching/ws12/mapping/pdf/slam06-eif.pdf
+        end             
         
     end
     methods (Access = private)
@@ -213,6 +208,10 @@ classdef EKF
             else
                 u = [];
             end
+            % Compute previous state
+            P = inv(obj.Omega);
+            x_prev = P * obj.xi;
+            
             % Discrete prediction model on the form:
             %   x[k+1] = f(x[k], u[k], q[k])
             %   where q[k] ~ N(0, Q)                        
@@ -225,23 +224,25 @@ classdef EKF
             q = zeros(size(obj.Q,1),1); % no noise
             if (obj.JacobiansAvailable)
                 % Evaluate Jacobians at previous posterior state
-                Ad = obj.Fx(obj.x,u,q);
-                %Bd = obj.Fu(obj.x,u,q);
-                Bdq = obj.Fq(obj.x,u,q);
+                Ad = obj.Fx(x_prev,u,q);
+                %Bd = obj.Fu(x_prev,u,q);
+                Bdq = obj.Fq(x_prev,u,q);
             else
                 % Perform numerical differentiation to compute Jacobians numerically
-                [dfdx, dfdu, dfdq] = numjacobian3(obj.f, obj.x, u, q);
+                [dfdx, dfdu, dfdq] = numjacobian3(obj.f, x_prev, u, q);
                 Ad = dfdx;
                 %Bd = dfdu;
                 Bdq = dfdq;
-            end
+            end 
             
+            % Compute prior information matrix            
+            P_prior = Ad * P * Ad' + Bdq * obj.Q * Bdq';
+            obj.Omega = inv(P_prior);            
+                        
             % Compute prior estimate using the discrete prediction model:
-            %   x[k+1] = f(x_hat[k], u[k], 0)
-            obj.x = obj.f(obj.x, u, q);
-
-            % Compute prior estimation error variance
-            obj.P = Ad * obj.P * Ad' + Bdq * obj.Q * Bdq'; 
+            %   x[k+1] = f(x_hat[k], u[k], 0)            
+            x = obj.f(x_prev, u, q);
+            obj.xi = obj.Omega * x;           
         end       
         
         function obj = predict_continuous(obj, varargin)
@@ -250,6 +251,10 @@ classdef EKF
             else
                 u = [];
             end
+            % Compute previous state
+            P = inv(obj.Omega);
+            x_prev = P * obj.xi;
+            
             % Continuous prediction model on the form:
             %   dx = f(x, u, q)          [ defined with dx = @(x, u, q) ... ]
             %   where q ~ N(0, Qc)
@@ -258,12 +263,12 @@ classdef EKF
             q = zeros(size(obj.Q,1),1); % no noise
             if (obj.JacobiansAvailable)
                 % Evaluate Jacobians at previous posterior state
-                Ac = obj.Fx(obj.x,u,q);
-                Bc = obj.Fu(obj.x,u,q);
-                Bq = obj.Fq(obj.x,u,q);
+                Ac = obj.Fx(x_prev,u,q);
+                Bc = obj.Fu(x_prev,u,q);
+                Bq = obj.Fq(x_prev,u,q);
             else
                 % Perform numerical differentiation to compute Jacobians numerically
-                [dfdx, dfdu, dfdq] = numjacobian3(obj.f, obj.x, u, q);
+                [dfdx, dfdu, dfdq] = numjacobian3(obj.f, x_prev, u, q);
                 Ac = dfdx;
                 Bc = dfdu;
                 Bq = dfdq;
@@ -288,19 +293,21 @@ classdef EKF
             Qd = obj.ts*Qcx;            
             % OBS. The above could possible also have been replaced by
             % Matrix exponential discretization:
-            [Ad, Bd] = discretize_analytic(Ac, Bc, obj.ts); 
+            [Ad, Bd] = discretize_analytic(Ac, Bc, obj.ts);                                      
             
+            % Compute prior information matrix            
+            P_prior = Ad * P * Ad' + Qd;
+            obj.Omega = inv(P_prior);            
+                        
             % Compute prior estimate using the continuous prediction model:
             %   dx = f(x, u, 0)
             % OBS: This can be done in 3 ways:
             %   1. Proper integration from t=t0 to t=t0+ts (e.g. with ODE solver)
             %   2. Euler method as listed above            
             % Forward Euler method
-            %   x[k+1] = x[k] + ts*f(x[k], u[k], 0)
-            obj.x = obj.x + obj.ts*obj.f(obj.x, u, q); % with q=0
-
-            % Compute prior estimation error variance
-            obj.P = Ad * obj.P * Ad' + Qd;             
+            %   x[k+1] = x[k] + ts*f(x[k], u[k], 0)            
+            x = x_prev + obj.ts*obj.f(x_prev, u, q); % with q=0
+            obj.xi = obj.Omega * x;              
         end                    
     end
 end

@@ -17,7 +17,7 @@ function [f, Fx, Fu, Fq] = CoordinatedTurnModel_Discrete(ts)
     % Difference equations:
     %   x[k] = x[k-1] + 2*v[k-1]/omega[k-1] * sin(omega[k-1]*ts/2) * cos(phi[k-1] + omega[k-1]*ts/2)
     %   y[k] = y[k-1] + 2*v[k-1]/omega[k-1] * sin(omega[k-1]*ts/2) * sin(phi[k-1] + omega[k-1]*ts/2)
-    %   v[k] = v[k-1] + q_v[-1]
+    %   v[k] = v[k-1] + q_v[k-1]
     %   phi[k] = phi[k-1] + ts*omega[k-1]
     %   omega[k] = omega[k-1] + q_omega[k-1]    
     

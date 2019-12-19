@@ -1,0 +1,10 @@
+Get g2o and GTSAM up and running with MATLAB
+
+See http://www.wseas.us/e-library/conferences/2013/Paris/ECCS/ECCS-31.pdf
+
+g2o:
+http://ais.informatik.uni-freiburg.de/publications/papers/kuemmerle11icra.pdf
+https://github.com/petercorke/robotics-toolbox-matlab/blob/master/PoseGraph.m
+
+GTSAM:
+https://github.com/borglab/gtsam/tree/develop/matlab

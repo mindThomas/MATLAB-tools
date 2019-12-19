@@ -110,5 +110,14 @@ classdef ConditionalGaussian
    
             joint = Gaussian(Mu2, Cov2);            
         end
+        
+        function plot(obj, varargin)
+            if (nargin == 2)
+                y = varargin{1};
+            else
+                y = 0;
+            end
+            obj.given(y).plot();
+        end
     end
 end
