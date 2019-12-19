@@ -1,0 +1,70 @@
+See: https://www.codeproject.com/Articles/865830/Point-cloud-alignment-ICP-methods-compared
+
+There are lots of different ICP methods implemented in hundreds of publications. The difference between them can be categorized regarding the 4 steps of the ICP methods (see the 4 points in "Brief Description of the ICP method").
+
+1. Different algorithms for finding the point correspondance between source and target.
+If one assumes that there are N points in the source and N points in the target cloud, a "brute force" method requires N*N operations, which is very slow. A k-d tree does this work in (N ln N) operations. There are also Octree or other variants, with basically the same speed. 
+
+
+2. Different way of calculating the transformation between two point clouds
+For rigid (translation, rotation) and affine (scaling) transformations, most methods use the mathematically driven solution, since the affine transformations has a mathematically closed solution. Some, but very few use other, e.g. probabilistic methods (like Monte Carlo).
+
+For the rotation and translation, the original ICP article of Horn [1] proposes a quaternion method. This has been proven (in the article of reference [6]) to be basically equivalent to others methods like:
+-a SVD (Singular Value Decomposition) method used first proposed in [7], used also in [3] and [4] and [5]
+-a method using orthonormal matrices methods see [2]
+-dual quaternion method [8] 
+
+There is however a difference regarding scale transformations. The original ICP method from 1987 did not include scale transformations, but Horn added this in his publication from 1988 [2].
+In real world the scale transformations is important, just imagine that you have a point cloud from one angle, then move towards the target to take the second point cloud. This is basically a scale transformation.
+A somewhat comprehensible discussion of scale transformations is done in [3] and [4]. 
+In the code I implemented, there are four different methods to include scaling
+-as in the "Horn" method of [2] on orthonormal matrix level
+-the "Umeyama" [3] method deduces the scale factor on eigenvalue level (his mathematical proof is nice :) )
+-the "Zinsser" [4] method deduces the scale factor as a partial derivative 
+-the "Du" [5] method is similar to [4], but deduces three scale factors (for the 3 geometry axes) as partial derivates 
+
+ 
+
+3. Other differences of ICP regard how you treat small measurement errors, outliers and missing points.
+Measurement errors occur quite often - due to the missing scan precision: The same point in space is represented by slightly different coordinates in the source and target cloud. To some extent this is covered in the base algorithm.
+Outliers are erroneous measured points, which should be ignored.
+Missing points are the points of one point cloud with no correspondence in the other cloud. This is wanted effect: By scanning the target from another angle, you will of course have points not present in the first scan. 
+
+As these three effects are highly non-linear, a lot of different implementations are published, with weight factors, etc. The methods cannot be really compared, since implementation details are not complete in lots of cases, and of course, they publish mostly working samples of point clouds. It would be nice to have also not - working examples published, this would be good for a method comparison. 
+
+There are also some methods which find some subset of identical points in source and target (e.g. by comparing color, or light intensity). 
+
+Comparison of the ICP methods of [1] - [4]
+-The Umeyama [3] and Zinsser [4] behave the same, although the method is different. They give the same results at translations, rotations and uniform scaling. (Uniform scaling means that the scale factor is the same in all 3 spatial directions)
+
+-The Horn [2] method behaves a bit different than [3] and [4] at scaling: The converge behaviour is different (sometimes faster, sometimes much slower), and the performance of a single iteration is slower, at least in the implementation I used, which is ported from the VTK library. I found some cases where [3] and [4] go into false local minima, but the Horn [2] method does OK, and some others where it is the other way around, see also samples below. 
+
+-The Du [5] method is the only one which works for inhomogenous scaling transformations. This is clear, as the others have by definition the same scale factor for all 3 directions. This should basically be better for real objects, where you have to take into account non-linear transformations of the scanned object.
+The convergence of the Du method is slower than the other methods. 
+
+
+References
+
+1. “Horn” ICP method
+-Berthold K. P. Horn (1987),  “Closed-form solution of absolute orientation using unit quaternions” in     Journal of the Optical Society of America A, vol. 4, page 629-642. See article link 
+
+2. Horn BKP, Hilden HM, Negahdaripour S (1988), "Closed-form solution of
+absolute orientation using orthonormal matrices", J Opt Soc Am Ser A, vol 5, page 1127–1135
+-Original python implementation of this method done by David G. Gobbi, later a C++ port in the VTK library, this was ported to C# by me.
+
+3.  “Umeyama” ICP Method
+Umeyama (1991), "Least-squares estimation of transformation parameters between two point patterns", IEEE Transactions On Pattern Analysis And Machine Intelligence, vol. 13, no. 4, page 376–380
+
+4. “Zinsser” ICP Method
+Timo Zinßer, Jochen Schmidt, Heinrich Niemann (2003), “A REFINED ICP ALGORITHM FOR ROBUST 3-D CORRESPONDENCE ESTIMATION” in IEEE International Conference on Image Processing, September 2003, Barcelona, Spain
+
+5. “Du” ICP Method
+Shaoyi Du, Nanning Zheng, Shihui Ying, Qubo You, Yang Wu (2007), “AN EXTENSION OF THE ICP ALGORITHM CONSIDERING SCALE FACTOR”, in Conference Image Processing, 2007. ICIP 2007. IEEE International Conference on, Volume: 5, see link
+
+6. Comparison of ICP Methods
+D.W. Eggert, A. Lorusso, R.B. Fisher (1997), “Estimating 3-D rigid body transformations: a comparison of four major algorithms”, Machine Vision and Applications, vol. 9, page 272–290, Springer-Verlag.
+
+7. K. S. Arun, T. S. Huang, and S. D. Blostein. Least square fitting of two 3-d point sets. IEEE Transactions on Pattern Analysis and Machine Intelligence, 9(5):698 – 700, 1987.
+
+8. M. W. Walker, L. Shao, and R. A. Volz. Estimating 3-d location parameters using dual number quaternions. CVGIP: Image Understanding, 54:358 – 367, November 1991.
+

@@ -40,11 +40,11 @@ classdef AMCL2
                 obj.particles(1,j) = 1.0*rand(1,1) - 0.5 + init_pose(1); % x
                 obj.particles(2,j) = 1.0*rand(1,1) - 0.5 + init_pose(2); % y
                 obj.particles(3,j) = 0.5*rand(1,1) - 0.25 + init_pose(3); % psi (yaw)                
-            end
+            end           
             
-            x_min = [-0.5; -0.5; -pi/2];
-            x_max = [0.5; 0.5; pi/2]; 
-            num_bins = [20; 20; 10];
+            x_min = [-2.5; -2.5; -pi/2];
+            x_max = [2.5; 2.5; pi/2]; 
+            num_bins = [20; 20; 10];            
             
             % Computes the number of particles needed to guarantee that with probability 1-rho, the K-L distance between
             % the MLE and the true distribution is less than epsilon

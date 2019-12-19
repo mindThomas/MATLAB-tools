@@ -25,7 +25,7 @@ classdef BeamRangeSensor
             
             obj.lambda_short = 0.5;
             obj.w_hit = 1.0;
-            obj.w_short = 1.25;
+            obj.w_short = 0.75;
             obj.w_max = 0.5;
             obj.w_rand = 0*1.0;
             
