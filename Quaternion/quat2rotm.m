@@ -19,10 +19,16 @@ function R = quat2rotm( q )
 %    'ncols', 4);
 
 % Normalize and transpose the quaternions
-q = q / norm(q);%robotics.internal.normalizeRows(q).';
+if (size(q, 1) == 4)
+    norm_q = sqrt(sum(q.^2, 1));
+else
+    norm_q = sqrt(sum(q.^2, 2));
+end
+
+q = q ./ norm_q;%robotics.internal.normalizeRows(q).';
 
 % Reshape the quaternions in the depth dimension
-q = reshape(q,[4 1 size(q,2)]);
+q = reshape(q,[4 1 size(q,1)]);
 
 s = q(1,1,:);
 x = q(2,1,:);

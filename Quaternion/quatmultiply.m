@@ -1,5 +1,12 @@
 % Return the quaternion multiplication of q and r.
 function qout = quatmultiply(q,r)
+    if (size(q,1)~=4 && size(r,1)~=4)
+        transposeQuat = true;
+        q = q';
+        r = r';
+    else
+        transposeQuat = false;
+    end
     if size(q,1)~=4 || size(r,1)~=4, error('q and r must be 4-by-1'); end
 
     % Calculate vector portion of quaternion product
@@ -16,4 +23,8 @@ function qout = quatmultiply(q,r)
                q(3,:).*r(3,:) - q(4,:).*r(4,:);
 
     qout = [scalar;  vec];
+    
+    if (transposeQuat)
+        qout = qout';
+    end
 end       

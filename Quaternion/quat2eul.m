@@ -26,6 +26,13 @@ function eul = quat2eul( q, varargin )
 %
 %   See also eul2quat
 
+if (size(q,1) ~= 4)
+    q = q';
+    transposeOutput = true;
+else
+    transposeOutput = false;
+end
+
 
 if (length(varargin) == 1)
     seq = varargin{1};
@@ -34,7 +41,8 @@ else
 end
 
 % Normalize the quaternions
-q = q / norm(q);
+norm_q = sqrt(sum(q.^2, 1));
+q = q ./ norm_q;
 
 qw = q(1,:);
 qx = q(2,:);
@@ -58,6 +66,10 @@ end
 % Check for complex numbers
 if ~isreal(eul)
     eul = real(eul);
+end
+
+if (transposeOutput)
+    eul = eul';
 end
 
 end
