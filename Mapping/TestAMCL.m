@@ -4,7 +4,7 @@ map = map.load('straight2.bmp');
 
 map_true = OccupancyGrid([0,0], [20,20], [0.1, 0.1]);
 map_true = map_true.load('straight3.bmp');
-%map = map_true;
+map = map_true;
 
 % Prepare car sim
 dt = 0.1;
@@ -12,7 +12,7 @@ car = CarSim(dt, map_true, 45);
 car.pose = [2, 5.5, 0]';
 
 % Create Adaptive Particle Filter
-localization = AMCL2(map, dt, 30, car.pose);
+localization = AMCL(map, dt, 30, car.pose);
 
 % Visualization
 car.plot();

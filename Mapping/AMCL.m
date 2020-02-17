@@ -42,8 +42,8 @@ classdef AMCL
                 obj.particles(3,j) = 0.5*rand(1,1) - 0.25 + init_pose(3); % psi (yaw)                
             end
             
-            x_min = [-2.5; -2.5; -pi/2];
-            x_max = [2.5; 2.5; pi/2]; 
+            x_min = [-0.5; -0.5; -pi/2];
+            x_max = [0.5; 0.5; pi/2]; 
             num_bins = [20; 20; 10];
             
             % Computes the number of particles needed to guarantee that with probability 1-rho, the K-L distance between
@@ -61,8 +61,8 @@ classdef AMCL
         end
                 
         function obj = filter(obj, v, omega, range_measurements, sensors)
-            % scan contains a cell array of BeamRangeSensor objects
-            uniform_samples = rand(size(obj.particles, 2), 1);
+            % scan contains a cell array of BeamRangeSensor objects            
+            log_likelihood = zeros(size(obj.particles, 2), 1);
             for (j = 1:size(obj.particles, 2))
                 % Propagate particles by drawing a new state from the
                 % proposal distribution
@@ -72,16 +72,21 @@ classdef AMCL
                 % Update the weight of the particle according to the
                 % measurement likelihood multiplied with the proposal to
                 % target distribution ratio
-                likelihood = 1;
+                log_likelihood(j) = 0;
                 for (i = 1:length(range_measurements))                    
-                    likelihood = likelihood * sensors{i}.inverse_measurement_probability(range_measurements(i), x, obj.map);
+                    log_likelihood(j) = log_likelihood(j) + log(sensors{i}.inverse_measurement_probability(range_measurements(i), x, obj.map));
                 end                
                 %proposal_ratio = obj.propagation_pdf(x, x_prev) / obj.propagation_proposal_distribution.pdf(x, x_prev);                                
-                proposal_ratio = 1; % set to one assuming our proposal and target distribution are the same, even though they are not!
+                %proposal_ratio = 1; % set to one assuming our proposal and target distribution are the same, even though they are not!
                 
                 obj.particles(:,j) = x;
-                obj.weights(j) = obj.weights(j) * likelihood * proposal_ratio;
             end             
+            
+            % Update weights
+            max_log_likelihood = max(log_likelihood)
+            for (j = 1:size(obj.particles, 2))
+                obj.weights(j) = obj.weights(j) * exp(log_likelihood(j) + max_log_likelihood);
+            end
             
             % Normalize weights
             obj.weights = obj.weights / sum(obj.weights);        
@@ -111,15 +116,21 @@ classdef AMCL
                 % Update the weight of the particle according to the
                 % measurement likelihood multiplied with the proposal to
                 % target distribution ratio
-                likelihood = 1;
+                % Using log-likelihood for numerical reasons
+                % See https://www.cs.utexas.edu/~kuipers/handouts/S07/L5%20Markov%20localization.pdf
+                log_likelihood(j) = 0;
                 for (i = 1:length(range_measurements))                    
-                    likelihood = likelihood * sensors{i}.inverse_measurement_probability(range_measurements(i), obj.particles(:,j), obj.map);
-                end                
+                    log_likelihood(j) = log_likelihood(j) + log(sensors{i}.inverse_measurement_probability(range_measurements(i), obj.particles(:,j), obj.map));
+                end               
                 %proposal_ratio = obj.propagation_pdf(x, x_prev) / obj.propagation_proposal_distribution.pdf(x, x_prev);                                
-                proposal_ratio = 1; % set to one assuming our proposal and target distribution are the same, even though they are not!
-                                
-                obj.weights(j) = obj.weights(j) * likelihood * proposal_ratio;
-            end             
+                %proposal_ratio = 1; % set to one assuming our proposal and target distribution are the same, even though they are not!
+            end     
+            
+            % Update weights
+            max_log_likelihood = max(log_likelihood);            
+            for (j = 1:size(obj.particles, 2))
+                obj.weights(j) = obj.weights(j) * exp(log_likelihood(j) + max_log_likelihood);
+            end            
             
             % Normalize weights
             obj.weights = obj.weights / sum(obj.weights);        

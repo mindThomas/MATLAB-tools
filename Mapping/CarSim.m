@@ -12,6 +12,7 @@ classdef CarSim
         % Lidar variables
         lidar_beam_sensors % vector of azimuth angles for the LiDAR beams
         latest_scan
+        latest_scan_points
         
         robot_radius
     end
@@ -19,7 +20,8 @@ classdef CarSim
     methods
         function obj = CarSim(dt, map, angle)
             obj.pose = [0; 0; 0];
-            lidar_beams = (-100:25:100)';
+            %lidar_beams = (-100:25:100)';
+            lidar_beams = (0:5:359)';
             for (i = 1:length(lidar_beams))
                 azimuth = lidar_beams(i);
                 obj.lidar_beam_sensors{i} = BeamRangeSensor(deg2rad(azimuth), deg2rad(2), 20, 0.2);
@@ -82,12 +84,42 @@ classdef CarSim
             obj.pose = obj.f(obj.pose, u, q);
         end
         
+        function [R, t] = odometry_transform(obj, v, omega)
+            % Implement bicycle model for propagation
+            
+            % Practical fix against zero angular velocity which will cause
+            % division by zero in the motion model
+            if (abs(omega) < 100*eps)
+                omega = 100*eps;
+            end
+            
+            % Construct motion model inputs
+            u = [v; omega];            
+            
+            pose1 = obj.pose;
+            pose2 = obj.f(pose1, u, 0);
+            
+            R1 = rot2(pose1(3));
+            T1 = [R1, pose1(1:2); 0, 0, 1];
+            
+            R2 = rot2(pose2(3));
+            T2 = [R2, pose2(1:2); 0, 0, 1];            
+            
+            Tdiff = inv(T1) * T2;
+            R = Tdiff(1:2,1:2);
+            t = Tdiff(1:2,3);
+        end
+        
         function obj = captureLiDAR2D_Deterministic(obj)
             % Do ray-casting on the map to generate 'lidar_beams' number of
             % beams
             obj.latest_scan = zeros(length(obj.lidar_beam_sensors), 1);
+            obj.latest_scan_points = [];
             for (i = 1:length(obj.lidar_beam_sensors))
                 obj.latest_scan(i) = obj.lidar_beam_sensors{i}.measurement_deterministic(obj.pose, obj.map);
+                if (obj.latest_scan(i) < obj.lidar_beam_sensors{i}.z_max)
+                    obj.latest_scan_points(end+1,:) = obj.latest_scan(i) * [cos(obj.lidar_beam_sensors{i}.azimuth_angle_rad); sin(obj.lidar_beam_sensors{i}.azimuth_angle_rad)];
+                end
             end                                     
         end
         
