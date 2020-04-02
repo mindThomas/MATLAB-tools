@@ -2,8 +2,7 @@ classdef Plane
    properties
       a
       b
-      c
-      sigma2
+      c      
    end
    methods
       function obj = Plane(a, b, c)

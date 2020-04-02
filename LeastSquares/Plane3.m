@@ -6,8 +6,7 @@ classdef Plane3
       a2
       b2
       a3
-      b3
-      sigma2
+      b3      
    end
    methods
       function obj = Plane3(a, b, c)
@@ -27,8 +26,7 @@ classdef Plane3
             obj.b2 = 0;            
             obj.a3 = 0;
             obj.b3 = 0;            
-         end
-         obj.sigma2 = 1e3;
+         end         
       end
 
       function obj = fit(obj, x, y, z, varargin)
