@@ -1,8 +1,8 @@
 classdef RecursiveLeastSquares_1D
     % Different implementations of ordinary recursive least squares
-    % min ||a*x - y||^2
+    % min ||y - a*x||^2
     % where || is the 2-norm (Euclidean distance)
-    % with an recursively incoming value of a_n and measurement y_n
+    % with a recursively incoming value of a_n and measurement y_n
     properties
         x_est
     end

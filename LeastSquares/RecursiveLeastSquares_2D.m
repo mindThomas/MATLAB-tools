@@ -1,8 +1,8 @@
 classdef RecursiveLeastSquares_2D
     % Different implementations of ordinary recursive least squares
-    % min ||A*x - y||^2
+    % min ||y - A*x||^2    
     % where || is the 2-norm (Euclidean distance)
-    % with an recursively incoming 2-element row of A_n and measurement y_n
+    % with a recursively incoming 2-element row of A_n and measurement y_n
     properties
         x_est
     end
@@ -32,7 +32,7 @@ classdef RecursiveLeastSquares_2D
             obj.AtA(2,2) = A_init(1,2)*A_init(1,2) + A_init(2,2)*A_init(2,2);
             
             % Compute A'*y
-            obj.AtY = A_init' * y_init;
+            % obj.AtY = A_init' * y_init;
             obj.AtY = zeros(2,1);
             obj.AtY(1) = A_init(1,1)*y_init(1) + A_init(2,1)*y_init(2);
             obj.AtY(2) = A_init(1,2)*y_init(1) + A_init(2,2)*y_init(2);

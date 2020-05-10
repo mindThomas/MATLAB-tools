@@ -1,0 +1,8 @@
+For nonrobust estimation: Levenberg-Marquardt nonlinear least squares algorithm [1].
+For robust estimation: iterative reweighted least squares algorithm ([2], [3]). At each iteration, the robust weights are recalculated based on each observation’s residual from the previous iteration. These weights downweight outliers, so that their influence on the fit is decreased. Iterations continue until the weights converge.
+When observation/measurement weights that depends on the fitted model: iterative generalized least squares algorithm
+
+References
+[1] Seber, G. A. F., and C. J. Wild. Nonlinear Regression. Hoboken, NJ: Wiley-Interscience, 2003.
+[2] DuMouchel, W. H., and F. L. O'Brien. “Integrating a Robust Option into a Multiple Regression Computing Environment.” Computer Science and Statistics: Proceedings of the 21st Symposium on the Interface. Alexandria, VA: American Statistical Association, 1989.
+[3] Holland, P. W., and R. E. Welsch. “Robust Regression Using Iteratively Reweighted Least-Squares.” Communications in Statistics: Theory and Methods, A6, 1977, pp. 813–827.

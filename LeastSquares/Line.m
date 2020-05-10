@@ -37,7 +37,7 @@ classdef Line
       
       function plot(obj, x_min, x_max, varargin)
           if (length(varargin) == 0)
-            line([x_min, x_max], [obj.eval(x_min), obj.eval(x_max)]);
+              line([x_min, x_max], [obj.eval(x_min), obj.eval(x_max)]);
           else
               line([x_min, x_max], [obj.eval(x_min), obj.eval(x_max)], 'Color', varargin{1});
           end

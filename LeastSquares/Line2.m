@@ -39,8 +39,12 @@ classdef Line2
          z = obj.a*x + obj.b*x.^2 + obj.c;
       end
       
-      function plot(obj, x_min, x_max)          
-          fplot(@(x) obj.eval(x), [x_min, x_max]);
+      function plot(obj, x_min, x_max, varargin) 
+          if (length(varargin) == 0)
+              fplot(@(x) obj.eval(x), [x_min, x_max]);
+          else
+              fplot(@(x) obj.eval(x), [x_min, x_max], 'Color', varargin{1});
+          end
       end
    end
 
