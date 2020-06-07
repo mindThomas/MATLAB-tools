@@ -18,6 +18,10 @@ function R = quat2rotm( q )
 %robotics.internal.validation.validateNumericMatrix(q, 'quat2rotm', 'q', ...
 %    'ncols', 4);
 
+if (size(q,1) ~= 4)
+    q = q';    
+end
+
 % Normalize and transpose the quaternions
 if (size(q, 1) == 4)
     norm_q = sqrt(sum(q.^2, 1));
@@ -28,7 +32,7 @@ end
 q = q ./ norm_q;%robotics.internal.normalizeRows(q).';
 
 % Reshape the quaternions in the depth dimension
-q = reshape(q,[4 1 size(q,1)]);
+q = reshape(q,[4 1 size(q,2)]);
 
 s = q(1,1,:);
 x = q(2,1,:);

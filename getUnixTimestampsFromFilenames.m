@@ -4,7 +4,6 @@ function timestamps = getUnixTimestampsFromFilenames(files)
         filePath = files{i};
         %file = dir(filePath);
         [~, fName, ext] = fileparts(filePath);
-        %if (contains(fName, 'CAM'))
         sName = split(fName, '_');
         fName = [sName{end-1}, '_', sName{end}];
         d = datetime(fName, 'InputFormat', 'yyyy-MM-dd_HH-mm-ss-SSS');
