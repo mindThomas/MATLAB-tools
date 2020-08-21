@@ -1,7 +1,7 @@
-function rotm = eul2rotm(eul, sequence)
-    if (size(eul,1) ~= 3)
-        error('eul2rotm: %s', WBM.wbmErrorMsg.WRONG_VEC_DIM);
-    end
+function rotm = eul2rotm(eul, sequence)   
+    if ( (size(eul,1) == 1) && (size(eul,2) == 3) )
+        eul = eul';
+    end    
 
     if ~exist('sequence', 'var')
         % use the default axis sequence ...
@@ -67,6 +67,6 @@ function rotm = eul2rotm(eul, sequence)
             rotm(3,2) =  s_2*s_3;
             rotm(3,3) =  c_2;
         otherwise
-            error('eul2rotm: %s', WBM.wbmErrorMsg.UNKNOWN_AXIS_SEQ);
+            error('eul2rotm: Unknown axis');
     end
 end

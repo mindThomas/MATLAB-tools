@@ -35,6 +35,9 @@ end
 
 if ( (size(eul,1) == 1) && (size(eul,2) == 3) )
     eul = eul';
+    transpose = true;
+else
+    transpose = false;
 end
 
 % Compute sines and cosines of half angles
@@ -56,6 +59,10 @@ switch seq
             c(1,:).*s(2,:).*s(3,:)-s(1,:).*s(2,:).*c(3,:); ...
             c(1,:).*s(2,:).*c(3,:)+s(1,:).*s(2,:).*s(3,:); ...
             s(1,:).*c(2,:).*c(3,:)+c(1,:).*c(2,:).*s(3,:)];
+end
+
+if (transpose)
+    q = q';
 end
 
 end

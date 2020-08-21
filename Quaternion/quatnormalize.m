@@ -14,4 +14,15 @@ function qout = quatnormalize( q )
 %   See also QUATCONJ, QUATDIVIDE, QUATINV, QUATMOD, QUATMULTIPLY, 
 %   QUATNORM, QUATROTATE.
 
+if (size(q,1) ~= 4)
+    q = q';
+    transposeOutput = true;
+else
+    transposeOutput = false;
+end
+
 qout = q./(ones(4,1) * quatmod( q ));
+
+if (transposeOutput)
+    qout = qout';
+end

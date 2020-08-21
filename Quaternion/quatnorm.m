@@ -14,11 +14,22 @@ function qout = quatnorm( q )
 %   QUATNORMALIZE, QUATROTATE.
 
 if any(~isreal(q(:)))
-    error('aero:quatnorm:isnotreal','Input elements are not real.');
+    error('quatnorm:isnotreal','Input elements are not real.');
 end
 
 if (size(q,1) ~= 4)
-    error('aero:quatnorm:wrongdim','Input dimension is not 4-by-M.');
+    q = q';
+    transposeOutput = true;
+else
+    transposeOutput = false;
+end
+
+if (size(q,1) ~= 4)
+    error('quatnorm:wrongdim','Input dimension is not 4-by-M.');
 end
 
 qout = sum(q.^2,1);
+
+if (transposeOutput)
+    qout = qout';
+end
