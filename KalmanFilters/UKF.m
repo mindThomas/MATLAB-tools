@@ -76,7 +76,7 @@ classdef UKF
             %   where r ~ N(0, R)
 
             % Compute measurement estimate and innovation covariance estimate by applying the unscented transform:            
-            [z_hat, obj.S, Pxz] = obj.UnscentedTransform(obj.h, obj.x, [], obj.P, obj.Q);
+            [z_hat, obj.S, Pxz] = obj.UnscentedTransform(obj.h, obj.x, [], obj.P, obj.R);
 
             % Compute posterior
             obj.x = obj.x + Pxz * inv(obj.S) * (z - z_hat);
@@ -116,7 +116,7 @@ classdef UKF
             sqrtCov = chol(Cov_prime, 'lower');
             
             % Initialize the Sigma points according to the unscented transform
-            if (nargin == 4)
+            if (nargin > 5)
                 W0 = varargin{1};
             else
                 W0 = 1 - n/3; % if no W0 is specified, set it as if the input distribution was Gaussian

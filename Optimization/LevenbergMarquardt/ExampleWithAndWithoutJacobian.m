@@ -18,3 +18,9 @@ opt.Jacobian='on';
 opt.Display='iter';
 [x1,~,fval_1,~,extra_arguments] = LevenbergMarquardt(f_combined,x0,[],[],opt);
 x1
+
+%%
+for (i = 1:100)
+x = x - 0.01*F_min(x)'
+f_min(x)
+end
