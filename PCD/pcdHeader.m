@@ -2,6 +2,8 @@ function [sensor] = pcdHeader(fname)
     
     fp = fopen(fname, 'r');
     version = [];
+    
+    viewpoint = [0, 0, 0, 1, 0, 0, 0];
 
     while true
         line = fgetl(fp);
@@ -56,7 +58,7 @@ function [sensor] = pcdHeader(fname)
     
     sensor.origin = viewpoint(1:3)';
     sensor.quaternion = viewpoint(4:7)';    
-    sensor.rotm = quat2rotm(sensor.quaternion);
+    sensor.rotm = quat2rotm(sensor.quaternion');
     
     fclose(fp);
 end

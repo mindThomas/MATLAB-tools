@@ -1,4 +1,9 @@
 function plotValues(pcd, valueLabel, rangeMin, rangeMax, varargin)
+    if (nargin < 3)
+        rangeMin = 0;
+        rangeMax = 0;
+    end
+    
     if (size(varargin) == 0)
         idx = 1:length(pcd.x);
     elseif (size(varargin) == 1)

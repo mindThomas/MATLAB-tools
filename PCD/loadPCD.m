@@ -1,8 +1,13 @@
-function pcd = loadPCD(filepath)
-    tmp = loadpcd(filepath);
+function pcd = loadPCD(filepath, varargin)
+    pcd = loadpcd_auto(filepath);
+    
+    if (length(varargin) == 1)
+        minimalLoad = varargin{1};
+    else
+        minimalLoad = false;
+    end    
 
-    % parse the PCD
-    % x y z
-    pcd.x = tmp(1,:)';
-    pcd.y = tmp(2,:)';
-    pcd.z = tmp(3,:)';
+    if (minimalLoad == false)
+        pcd.sensor = pcdHeader(filepath);
+        pcd.sensor.tf = [pcd.sensor.rotm, pcd.sensor.origin; 0,0,0,1];
+    end

@@ -51,7 +51,12 @@ function plotPCD(pcd, varargin)
     ax = gca;
     ax.XAxis.Visible = 'off';
     ax.YAxis.Visible = 'off';
-    ax.ZAxis.Visible = 'off';             
+    ax.ZAxis.Visible = 'off';          
+    
+    if (~newPlot)
+        %camtarget(target);
+        %campos(pos);
+    end      
     
     if (newPlot)
         view([-90, 22]);
