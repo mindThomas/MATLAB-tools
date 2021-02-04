@@ -9,6 +9,26 @@ classdef NURB_PixelSurface
             % pad image with two rows/columns of pixels around all edges
             obj.image = zeros(size(image)+[4,4]);
             obj.image(3:end-2, 3:end-2) = double(image);
+            
+            % Duplicate pixels near the edges such that the value doesn't
+            % go to 0
+            obj.image(3:end-2, 1) = obj.image(3:end-2, 3);
+            obj.image(3:end-2, 2) = obj.image(3:end-2, 3);            
+            
+            obj.image(3:end-2, end) = obj.image(3:end-2, end-2);
+            obj.image(3:end-2, end-1) = obj.image(3:end-2, end-2);
+            
+            obj.image(1, 3:end-2) = obj.image(3, 3:end-2);
+            obj.image(2, 3:end-2) = obj.image(3, 3:end-2);
+            
+            obj.image(end, 3:end-2) = obj.image(end-2, 3:end-2);
+            obj.image(end-1, 3:end-2) = obj.image(end-2, 3:end-2);
+            
+            % Duplicate the corner pixels
+            obj.image(1:2, 1:2) = obj.image(3, 3);                        
+            obj.image(end-1:end, 1:2) = obj.image(end-2, 3);                        
+            obj.image(end-1:end, end-1:end) = obj.image(end-2, end-2);                        
+            obj.image(1:2, end-1:end) = obj.image(3, end-2);            
         end        
         
         function out = eval(obj, x, y)
@@ -49,12 +69,26 @@ classdef NURB_PixelSurface
 %             end
 %             out = out / normalizer;       
             % Normalization is not needed since the basis functions integrates and sums to 1  
-            out = 0;            
-            for (xi = x_min:x_max)
-                for (yi = y_min:y_max)                    
-                    out = out + obj.image(yi+2, xi+2) * obj.basis(xi, x) * obj.basis(yi, y);                    
+%             out = 0;            
+%             for (xi = x_min:x_max)
+%                 for (yi = y_min:y_max)                    
+%                     out = out + obj.image(yi+2, xi+2) * obj.basis(xi, x) * obj.basis(yi, y);                    
+%                 end
+%             end                            
+
+            % Another way of doing this which leads to less evaluations 
+            % of the basis functions is:
+            out = 0;
+            for (yi = y_min:y_max)    
+                tmp = 0;        
+                % tmp = get_row_value
+                for (xi = x_min:x_max)
+                    tmp = tmp + obj.image(yi+2, xi+2) * obj.basis(xi, x);                    
                 end
+                
+                out = out + obj.basis(yi, y) * tmp;
             end                            
+
         end
         
         function B = basis(obj, i, u)       

@@ -1,21 +1,52 @@
-%% Test basis function
+%% Test basis function with normal B-spline
+spline = Bspline_generic(0:9, 3);
+spline.knots = 0:9;
+spline.n = length(spline.knots);
+
+%u = min(spline.knots):0.02:max(spline.knots);
+u = 0:0.02:10;
+B = {};
+C = {};
+figure(1);
+for (j = 0)
+    B{j+1} = zeros(size(u));
+    C{j+1} = zeros(size(u));
+    for (i = 1:length(u))            
+        B{j+1}(i) = spline.basis(2, j, u(i));       
+        C{j+1}(i) = spline.dbasis(2, j, u(i));       
+    end
+    figure(1);
+    plot(u, B{j+1});
+    hold on;
+    plot(u, C{j+1});
+end
+hold off;
+
+%%
+hold on;
+fplot(@(s) 1/2* (s^2), [0,1]);
+fplot(@(s) 1/2* (-2*s^2 + 6*s - 3), [1,2]);
+fplot(@(s) 1/2* (s^2 - 6*s + 9), [2,3]);
+hold off;
+
+%% Test basis function with closed B-spline
 spline = Bspline_simple_closed(0:9, 3);
 %spline.knots = 0:9;
 %spline.n = length(spline.knots);
 
 %u = min(spline.knots):0.02:max(spline.knots);
 u = 0:0.02:10;
-B0 = zeros(size(u));
-B1 = zeros(size(u));
-for (i = 1:length(u))
-    %B0(i) = spline.basis1(  7, u(i));
-    B1(i) = spline.basis(3, 5, u(i));       
-end
-
+B = {};
 figure(1);
-plot(u, B0);
-hold on;
-plot(u, B1);
+for (j = 1:5)
+    B{j} = zeros(size(u));
+    for (i = 1:length(u))    
+        B{j}(i) = spline.basis(3, j-3, u(i));       
+    end
+    figure(1);
+    plot(u, B{j});
+    hold on;
+end
 hold off;
 
 %% Comparison of basis function to Gaussian
@@ -23,7 +54,7 @@ degree = 3;
 mu = 3;
 sigma = 0.6;
 
-spline = Bspline(0:9, degree);
+spline = Bspline_generic(0:9, degree);
 %spline.knots = 0:9;
 %spline.n = length(spline.knots);
 
@@ -49,7 +80,7 @@ title('Basis function comparison to a Gaussian distribution');
 
 %% Test 1D curve
 control_points = [0.0, 0.0, 2.5, 0.5, 10.0, 10.0, 10, 0.0 ,0.0];
-spline = Bspline(control_points, 3);
+spline = Bspline_generic(control_points, 3);
 
 figure(1);
 plot(spline.knots, spline.control_points, 'o');

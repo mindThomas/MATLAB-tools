@@ -70,8 +70,8 @@ classdef Bspline_simple_closed
             end
         end             
         
-        function dB = dbasis(obj, p, i, u)            
-            % dBasis / du
+        % dBasis / du
+        function dB = dbasis(obj, p, i, u)                        
             if (p == 0)                                 
                 dB = 0;
             else
@@ -86,8 +86,8 @@ classdef Bspline_simple_closed
             end
         end             
         
-        function ddB = ddbasis(obj, p, i, u)            
-            % ddBasis / du
+        % ddBasis / du
+        function ddB = ddbasis(obj, p, i, u)                        
             if (p == 0)                                 
                 ddB = 0;
             else

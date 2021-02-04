@@ -5,9 +5,9 @@ B = zeros(size(u));
 dB = zeros(size(u));
 ddB = zeros(size(u));
 for (i = 1:length(u))    
-    B(i) = Bspline2.basis(3, 5, u(i));    
-    dB(i) = Bspline2.dbasis(3, 5, u(i));    
-    ddB(i) = Bspline2.ddbasis(3, 5, u(i));       
+    B(i) = Bspline_uniform.basis(3, 5, u(i));    
+    dB(i) = Bspline_uniform.dbasis(3, 5, u(i));    
+    ddB(i) = Bspline_uniform.ddbasis(3, 5, u(i));       
 end
 
 figure(1);
@@ -20,8 +20,8 @@ hold off;
 legend('3rd order basis', '1st derivative', '2nd derivative');
 
 %%
-num_ref_points = 10;
-num_control_points = 4;
+num_ref_points = 8;
+num_control_points = 8;
 order = 3;
 
 figure(1);
@@ -33,7 +33,7 @@ xlim([0, 10]);
 ylim([0, 10]);
 
 %% Initial for fitting
-spline = Bspline2.fit_reference(ref(:,1), ref(:,2), num_control_points, order);
+spline = Bspline_uniform.fit_reference(ref(:,1), ref(:,2), num_control_points, order);
 
 t = ((spline.n-spline.original_n)/2):0.02:(spline.original_n-1+(spline.n-spline.original_n)/2);
 %t = 0:0.02:(spline.n-1);
@@ -65,10 +65,10 @@ ylim([0, 10]);
 %%
 first = true;
 while (true)    
-cost = Bspline2.objective(order, ref(:,1), ref(:,2), spline.tr, spline.control_points(1,:), spline.control_points(2,:))
-[dcost_dtr, dcost_dPx, dcost_dPy] = Bspline2.gradient(order, ref(:,1), ref(:,2), spline.tr, spline.control_points(1,:), spline.control_points(2,:));
+cost = Bspline_uniform.objective(order, ref(:,1), ref(:,2), spline.tr, spline.control_points(1,:), spline.control_points(2,:))
+[dcost_dtr, dcost_dPx, dcost_dPy] = Bspline_uniform.gradient(order, ref(:,1), ref(:,2), spline.tr, spline.control_points(1,:), spline.control_points(2,:));
 
-step = 0.01;
+step = 0.005;
 spline.tr = spline.tr - step*dcost_dtr;
 spline.control_points(1,:) = spline.control_points(1,:) - step*dcost_dPx;
 spline.control_points(2,:) = spline.control_points(2,:) - step*dcost_dPy;
@@ -113,7 +113,7 @@ end
 
 %% Try with fmincon
 % Initial for fitting
-spline = Bspline2.fit_reference(ref(:,1), ref(:,2), num_control_points, order);  
+spline = Bspline_uniform.fit_reference(ref(:,1), ref(:,2), num_control_points, order);  
 params0 = [spline.tr, spline.control_points(1,:), spline.control_points(2,:)]; % , 0:(size(spline.control_points, 2)-1)
 tr1 = 1;
 tr2 = tr1 + length(spline.tr) - 1;
@@ -124,8 +124,8 @@ Py2 = Py1 + size(spline.control_points, 2) - 1;
 tc1 = Py2 + 1;
 tc2 = tc1 + size(spline.control_points, 2) - 1;
 
-f_min = @(params) Bspline2.objective(order, ref(:,1), ref(:,2), params(tr1:tr2), params(Px1:Px2), params(Py1:Py2));  %params(tc1:tc2)
-F_min = @(params) Bspline2.gradient2(order, ref(:,1), ref(:,2), params(tr1:tr2), params(Px1:Px2), params(Py1:Py2));
+f_min = @(params) Bspline_uniform.objective(order, ref(:,1), ref(:,2), params(tr1:tr2), params(Px1:Px2), params(Py1:Py2));  %params(tc1:tc2)
+F_min = @(params) Bspline_uniform.gradient2(order, ref(:,1), ref(:,2), params(tr1:tr2), params(Px1:Px2), params(Py1:Py2));
 f_combined = @(params) deal(f_min(params), F_min(params));  % combine into function with multiple outputs
 
 %opt.Jacobian='on';
@@ -224,7 +224,7 @@ while (true)
 
     if (size(ref,1) > 1)
         % Initial for fitting
-        spline = Bspline2.fit_reference(ref(:,1), ref(:,2), length(ref), order);
+        spline = Bspline_uniform.fit_reference(ref(:,1), ref(:,2), length(ref));
         cost = spline.objective(order, ref(:,1), ref(:,2), spline.tr, spline.control_points(1,:), spline.control_points(2,:))
         
         % Evaluate Bspline with initial points

@@ -1,4 +1,7 @@
-classdef Bspline 
+% Generic B-spline definition
+% Supports arbitrary orders/degree
+% Supports arbitrary knot and control point locations
+classdef Bspline_generic
     properties %(SetAccess = private)
         n % number of knots
         p % degree / order
@@ -6,9 +9,9 @@ classdef Bspline
         control_points   % matrix of control points stored as column vectors, rows=elements of control points, columns=different control points   
     end
     methods
-        function obj = Bspline(control_points, degree)            
+        function obj = Bspline_generic(control_points, degree)            
             obj.control_points = control_points; 
-            obj.n = length(obj.control_points);
+            obj.n = size(obj.control_points, 2);
             obj.knots = 0:(obj.n-1); % make uniform B-spline currently
             obj.p = degree; % degree
             
@@ -58,7 +61,47 @@ classdef Bspline
                     % matches the definition from Wikipedia
                 end                                
             end
-        end                
+        end    
+        
+        % dBasis / du
+        function dB = dbasis(obj, p, i, u)                        
+            dB = 0;
+            if (i < 0 || i >= obj.n)                
+                return;
+            end            
+            
+            if (p > 0)
+                if (i+p < obj.n)
+                    dB = dB + 1 / (obj.knots(i+p+1) - obj.knots(i+1)) * obj.basis(p-1, i, u) ...
+                            + (u - obj.knots(i+1)) / (obj.knots(i+p+1) - obj.knots(i+1)) * obj.dbasis(p-1, i, u);                    
+                end
+                if (i+p+1 < obj.n)                    
+                    dB = dB + -1 / (obj.knots(i+p+2) - obj.knots(i+2)) * obj.basis(p-1, i+1, u) ...
+                            + (1 - (u - obj.knots(i+2)) / (obj.knots(i+p+2) - obj.knots(i+2))) * obj.dbasis(p-1, i+1, u);
+                end                                
+            end
+        end           
+        
+        % dBasis / du
+        function ddB = ddbasis(obj, p, i, u)                        
+            ddB = 0;
+            if (i < 0 || i >= obj.n)                
+                return;
+            end            
+            
+            if (p > 0)
+                if (i+p < obj.n)
+                    ddB = ddB + 1 / (obj.knots(i+p+1) - obj.knots(i+1)) * obj.dbasis(p-1, i, u) ...
+                              + 1 / (obj.knots(i+p+1) - obj.knots(i+1)) * obj.dbasis(p-1, i, u) ...
+                              + (u - obj.knots(i+1)) / (obj.knots(i+p+1) - obj.knots(i+1)) * obj.ddbasis(p-1, i, u);
+                end
+                if (i+p+1 < obj.n)                    
+                    ddB = ddB + -1 / (obj.knots(i+p+2) - obj.knots(i+2)) * obj.dbasis(p-1, i+1, u) ...
+                              + -1 / (obj.knots(i+p+2) - obj.knots(i+2)) * obj.dbasis(p-1, i+1, u) ...
+                              + (1 - (u - obj.knots(i+2)) / (obj.knots(i+p+2) - obj.knots(i+2))) * obj.ddbasis(p-1, i+1, u);
+                end                                
+            end
+        end          
         
         % Closed form expressions for the basis for certain orders
         function B = basis0(obj, i, u)       
