@@ -14,7 +14,7 @@ function plotValues(pcd, valueLabel, rangeMin, rangeMax, varargin)
         
     [AZ,EL] = view(gca);
     newPlot = (AZ==0 && EL==90);
-    eval(['values = pcd.' valueLabel ';']);
+    values = pcd.(valueLabel);
     
     if (rangeMin == rangeMax)
         rangeMin = min(values(idx));
