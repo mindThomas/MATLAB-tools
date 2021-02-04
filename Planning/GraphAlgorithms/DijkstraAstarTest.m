@@ -59,7 +59,8 @@ cost(start(2), start(1)) = 0;
 
 % Create priority queue and add starting point to it
 q = PriorityQueue();
-q.push(start, 0); % starting cost/priority set to 0
+%q.push(start, 0); % starting cost/priority set to 0
+q.insert([0, start]); % starting cost/priority set to 0
 
 % ind2sub
 % sub2ind(size(track), 1, 2)
@@ -67,9 +68,12 @@ iterations = 0;
 
 GoalReached = false;
 tic
-while (~q.empty())
+%while (~q.empty())
+while (q.size() > 0)
     % Pop next prioritized position to process
-    current = q.pop(); 
+    %current = q.pop(); 
+    current = q.remove();
+    current = current(2:3);
     current_cost = cost(current(2), current(1));
     
     % Have we reached the goal?
@@ -101,8 +105,9 @@ while (~q.empty())
                 came_from_position{neighbor(2), neighbor(1)} = current;
                 
                 % Add neighbor position to prioritized processing
-                priority = new_cost + 0*dist_to_goal; % adding this dist_to_goal makes it an A* algorithm
-                q.push(neighbor, priority); % could also be push_update (which checks if the element already exists)
+                priority = new_cost + 0*dist_to_goal; % adding this dist_to_goal makes it an A* algorithm                
+                %q.push(neighbor, priority); % could also be push_update (which checks if the element already exists)
+                q.insert([priority, neighbor]); % could also be push_update (which checks if the element already exists)
             end
         end
     end
@@ -156,3 +161,9 @@ im(:,:,2) = G;
 im(:,:,3) = B;
 figure(2);
 imshow(im);   
+
+%%
+guidance = 0 * ones(size(track,1), size(track,2));
+guidance(sub2ind(size(track), path(:,1), path(:,2))) = 1;
+guidance = -double(bwdist(1-track,'euclidean'));
+imshow(1-guidance / min(min(guidance)));
