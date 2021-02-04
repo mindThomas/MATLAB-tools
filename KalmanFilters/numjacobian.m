@@ -20,7 +20,7 @@ function Jx = numjacobian(f,x)
     
     n = size(x,1); % set size of state vector
     m = size(f(x),1); % number of functions in system
-    step = 1e-8; % difference step size
+    step = 1e-4; % difference step size
 
     % preallocate matrix for speed
     Jx = zeros(m,n);
