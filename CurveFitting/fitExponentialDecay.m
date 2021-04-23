@@ -1,7 +1,7 @@
 % x and y should be column vectors; m x 1
-% f(x) = a + b * exp(-c*x)
+% f(x) = a + b * exp(c*x)
 function [a, b, c] = fitExponentialDecay(x, y, varargin)
-    coeffs0 = [0, y(1), 1]; % initialization point
+    coeffs0 = [0, y(1), -0.1]; % initialization point
     model = @(coeff,t)(coeff(1) + coeff(2) * exp(-coeff(3)*t(:, 1)));
     
     if (length(varargin) > 0)
